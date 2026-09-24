@@ -7,11 +7,14 @@ and demo scripts only.
 import logging
 import sys
 
+from pathlib import Path
+
 from .contract import *
 from .factory import DriverConfig, SimControls, Simulator, create_driver, register_driver  # noqa: F401
 from .faults import Condition, Fault, FaultProfile, LatencyProfile, preset  # noqa: F401
 
 __version__ = "0.1.0"
+MEDIA_DIR = Path(__file__).resolve().parent / "media"
 
 
 def enable_trace_logging(level: int = logging.DEBUG) -> None:
