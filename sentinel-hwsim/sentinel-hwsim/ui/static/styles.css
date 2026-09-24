@@ -351,12 +351,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .errline { font-size: var(--fs-small); color: var(--ink-2); }
 .errline strong { color: var(--alert); font-family: var(--mono); font-weight: 600; }
 
-.snapshot { display: grid; gap: var(--s2); margin: 0; }
-.snapshot__frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: var(--line); }
-.snapshot__frame img { width: 100%; height: 100%; object-fit: cover; transition: opacity var(--dur) var(--ease); }
-.snapshot__frame[aria-busy="true"] img { opacity: 0.4; }
-.snapshot__empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); font-size: var(--fs-small); text-align: center; padding: var(--s4); }
-.snapshot figcaption { font-size: var(--fs-caption); color: var(--ink-2); display: flex; justify-content: space-between; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+/* camera feed: a video surface is dark in both themes, like a monitor */
+.feed { display: grid; gap: var(--s2); margin: 0; }
+.feed__frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #0b0c0f; }
+.feed__video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.feed__badge { position: absolute; top: var(--s2); left: var(--s2); margin: 0; padding: 0.125rem var(--s2); border-radius: 999px; background: rgb(0 0 0 / 0.65); color: #fff; font-size: var(--fs-caption); font-weight: 600; font-variant-numeric: tabular-nums; pointer-events: none; }
+.feed__empty { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; color: #c9ccd3; font-size: var(--fs-small); text-align: center; padding: var(--s4); }
+.feed__empty[hidden] { display: none; }
+.feed figcaption { font-size: var(--fs-caption); color: var(--ink-2); display: flex; justify-content: space-between; gap: var(--s3); align-items: center; flex-wrap: wrap; }
 
 .uri { display: grid; grid-template-columns: 1fr auto; gap: var(--s2); align-items: center; }
 .uri code { overflow-wrap: anywhere; padding: var(--s2); background: var(--hover); border-radius: var(--radius-sm); }

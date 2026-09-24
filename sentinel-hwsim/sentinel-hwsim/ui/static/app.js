@@ -141,7 +141,7 @@ function route() {
   }
   route.started = true;
   if (view === "events") renderEventTable();
-  if (view === "cameras" && store.selectedCam) maybeAutoSnapshot();
+  if (view !== "cameras") feedVideo.pause();
   trace.toggle(view === "trace");
   renderAll();
 }
@@ -323,7 +323,6 @@ function renderCameraLists() {
   }
 }
 
-let snapUrl = null, lastAutoSnap = null;
 function selectCamera(id) {
   if (!id || id === store.selectedCam && $("#cam-title").textContent === id) return;
   store.selectedCam = id;
@@ -331,11 +330,7 @@ function selectCamera(id) {
   $$("#enc-form .input").forEach((i) => i.removeAttribute("aria-invalid"));
   const ptz = store.cameras.get(id)?.ptz;
   for (const k of ["pan", "tilt", "zoom"]) setRange(`#ptz-${k}`, ptz?.[k] ?? 0);
-  $("#snap-img").hidden = true;
-  $("#snap-empty").hidden = false;
-  $("#snap-empty").textContent = "No snapshot yet";
   $("#cam-streams").dataset.sig = "";
-  if (store.view === "cameras") maybeAutoSnapshot();
 }
 
 function setRange(sel, v) {
@@ -389,41 +384,35 @@ function renderCameraDetail() {
   $("#cam-offline").textContent = chaos.offline ? "Bring online" : "Take offline";
   $("#cam-revoke").setAttribute("aria-pressed", String(chaos.revoke));
   $("#cam-revoke").textContent = chaos.revoke ? "Restore credentials" : "Revoke credentials";
+  syncFeed(c);
 }
 
-function maybeAutoSnapshot() {
-  if (lastAutoSnap === store.selectedCam) return;
-  lastAutoSnap = store.selectedCam;
-  takeSnapshot(null);
-}
+// ------------------------------------------------------------- camera feed
+// Recorded MAIN / SUB clips stand in for the cameras' video (the simulator has no pixels).
+// The server alternates them by camera (CAM-001 MAIN, CAM-002 SUB, ...) and lists the clips it has in meta.feeds.
+const feedVideo = $("#feed-video");
+let feedPaused = matchMedia("(prefers-reduced-motion: reduce)").matches;   // the viewer's choice; starts paused if motion is reduced
 
-async function takeSnapshot(btn) {
-  const id = store.selectedCam, frameEl = $("#snap-frame"), img = $("#snap-img");
-  frameEl.setAttribute("aria-busy", "true");
-  const run = async () => {
-    try {
-      const blob = await api(`/api/devices/${id}/snapshot`);
-      if (id !== store.selectedCam) return;
-      if (snapUrl) URL.revokeObjectURL(snapUrl);
-      snapUrl = URL.createObjectURL(blob);
-      const at = fmtTime(new Date().toISOString());
-      img.src = snapUrl;
-      img.alt = `Simulated snapshot from ${id}, captured ${at}`;
-      img.hidden = false;
-      $("#snap-empty").hidden = true;
-      $("#snap-caption").textContent = `Captured ${at} · simulated frame (gradient placeholder)`;
-      if (btn) announce(`Snapshot from ${id} captured`);
-    } catch (e) {
-      if (id !== store.selectedCam) return;
-      $("#snap-empty").hidden = false;
-      $("#snap-empty").textContent = `Snapshot failed: ${e.code}`;
-      img.hidden = true;
-      if (btn) notify(`${e.code}: ${e.message}`, "error");
-    } finally {
-      frameEl.removeAttribute("aria-busy");
-    }
-  };
-  return btn ? busy(btn, run) : run();
+function setText(el, text) { if (el.textContent !== text) el.textContent = text; }
+
+function syncFeed(c) {
+  const src = store.meta?.feeds?.[c.feed], empty = $("#feed-empty");
+  let note = null;
+  if (!src) note = "No feed clip on the server. Put camera_main.mp4 and camera_sub.mp4 in the camera_feed folder.";
+  else if (tone(c.health) === "crit") note = `No signal · ${c.id} is ${label(c.health).toLowerCase()}`;
+  else if (feedVideo.dataset.failed === src) note = "This browser could not play the feed clip.";
+
+  setText($("#feed-badge"), `${c.id} · ${c.feed}`);
+  setText($("#feed-caption"), `${c.feed} feed · looping sample clip`);
+  setText($("#feed-toggle"), feedPaused ? "Play feed" : "Pause feed");
+  empty.hidden = !note;
+  if (note) setText(empty, note);
+  feedVideo.hidden = !!note;
+  if (note) return feedVideo.pause();
+
+  feedVideo.setAttribute("aria-label", `${c.id} ${c.feed} camera feed, looping sample clip`);
+  if (feedVideo.getAttribute("src") !== src) feedVideo.src = src;    // CAM-001 and CAM-003 share a clip: no reload
+  if (!feedPaused && feedVideo.paused) feedVideo.play().catch(() => {});   // muted, so autoplay is allowed
 }
 
 function fieldError(input, errEl, msg) {
@@ -433,7 +422,17 @@ function fieldError(input, errEl, msg) {
 }
 
 function bindCameraControls() {
-  $("#snap-btn").addEventListener("click", (e) => takeSnapshot(e.currentTarget));
+  $("#feed-toggle").addEventListener("click", () => {
+    feedPaused = !feedPaused;
+    if (feedPaused) feedVideo.pause();
+    syncFeed(store.cameras.get(store.selectedCam));
+    announce(feedPaused ? "Feed paused" : "Feed playing");
+  });
+  feedVideo.addEventListener("error", () => {
+    feedVideo.dataset.failed = feedVideo.getAttribute("src");
+    syncFeed(store.cameras.get(store.selectedCam));
+  });
+  feedVideo.addEventListener("loadedmetadata", () => { if (feedVideo.paused) feedVideo.currentTime = 0.1; });   // paint a frame while paused
 
   for (const k of ["pan", "tilt", "zoom"]) {
     $(`#ptz-${k}`).addEventListener("input", (e) => { e.target.nextElementSibling.textContent = Number(e.target.value).toFixed(2); });

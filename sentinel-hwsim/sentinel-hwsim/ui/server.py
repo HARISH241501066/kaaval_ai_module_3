@@ -50,6 +50,16 @@ STATIC_TYPES = {"index.html": "text/html; charset=utf-8", "styles.css": "text/cs
 CSP = ("default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; "
        "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
+# Recorded clips that stand in for the cameras' video (the simulator has no pixels of its own).
+FEED_FILES = {"MAIN": "camera_main.mp4", "SUB": "camera_sub.mp4"}
+FEED_CHUNK = 256 * 1024
+
+
+def find_feed_dir() -> Path | None:
+    """Nearest `camera_feed/` folder in this file's parent directories (the workspace root, normally)."""
+    return next((p / "camera_feed" for p in Path(__file__).resolve().parents if (p / "camera_feed").is_dir()), None)
+
+
 HEARTBEAT_S = 5.0
 NODE_ID = "EDGE-NODE-001"
 # In M3 this comes from the C7 registry.
@@ -100,14 +110,18 @@ async def classify_node(node: AINodeDriver, last_heartbeat_at, now, connected_fo
 
 
 class Fleet:
-    def __init__(self, *, speed: float, seed: int):
+    def __init__(self, *, speed: float, seed: int, feed_dir: Path | None = None):
         self.speed, self.seed = speed, seed
         self.sim = Simulator(speed=speed, seed=seed)
         self.drivers = {d["device_id"]: create_driver(d, simulator=self.sim) for d in FLEET}
         self.cameras = [d["device_id"] for d in FLEET if d["kind"] == "camera"]
+        # feed clips that exist on disk, by profile -> URL
+        self.feeds = {p: f"/feed/{p.lower()}.mp4" for p, name in FEED_FILES.items() if feed_dir and (feed_dir / name).is_file()}
+        # cameras alternate between the two clips: CAM-001 MAIN, CAM-002 SUB, CAM-003 MAIN, CAM-004 SUB
         self.cam: dict[str, dict[str, Any]] = {c: {"id": c, "health": "CONNECTING", "info": None, "status": None,
-                                                    "streams": {}, "ptz": None, "last_error": None, "errors": 0}
-                                               for c in self.cameras}
+                                                    "streams": {}, "ptz": None, "last_error": None, "errors": 0,
+                                                    "feed": "MAIN" if i % 2 == 0 else "SUB"}
+                                               for i, c in enumerate(self.cameras)}
         self.node: dict[str, Any] = {"id": NODE_ID, "health": "CONNECTING", "info": None, "capabilities": None,
                                      "model": None, "ai_health": None, "layers": {}, "last_error": None,
                                      "last_heartbeat_at": None, "events_received": 0, "heartbeats_received": 0,
@@ -132,7 +146,7 @@ class Fleet:
 
     def snapshot(self) -> dict[str, Any]:
         return {"meta": {"speed": self.speed, "seed": self.seed, "started_at": self.started_at,
-                         "heartbeat_s": HEARTBEAT_S},
+                         "heartbeat_s": HEARTBEAT_S, "feeds": self.feeds},
                 "cameras": [self.cam[c] for c in self.cameras], "node": self.node,
                 "events": list(self.events)[-50:], "alerts": list(self.alerts), "dlq": list(self.dlq)}
 
@@ -334,8 +348,8 @@ class Fleet:
 # Minimal HTTP/1.1 server (one request per connection; SSE keeps it open)
 # --------------------------------------------------------------------------- #
 class Server:
-    def __init__(self, fleet: Fleet, host: str, port: int):
-        self.fleet, self.host, self.port = fleet, host, port
+    def __init__(self, fleet: Fleet, host: str, port: int, feed_dir: Path | None = None):
+        self.fleet, self.host, self.port, self.feed_dir = fleet, host, port, feed_dir
         self.loopback = ipaddress.ip_address(host).is_loopback if host != "localhost" else True
         self.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
         self._gz: dict[str, bytes] = {}
@@ -364,13 +378,48 @@ class Server:
         finally:
             writer.close()
 
-    async def send(self, writer, status: int, body: bytes, ctype: str, extra: dict[str, str] | None = None) -> None:
-        hdrs = {"Content-Type": ctype, "Content-Length": str(len(body)), "Connection": "close",
+    @staticmethod
+    def head(status: int, ctype: str, length: int, extra: dict[str, str] | None = None) -> bytes:
+        hdrs = {"Content-Type": ctype, "Content-Length": str(length), "Connection": "close",
                 "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Cache-Control": "no-store",
                 **(extra or {})}
-        head = f"HTTP/1.1 {status} {HTTPStatus(status).phrase}\r\n" + "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
-        writer.write(head.encode("latin-1") + b"\r\n" + body)
+        text = f"HTTP/1.1 {status} {HTTPStatus(status).phrase}\r\n" + "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
+        return text.encode("latin-1") + b"\r\n"
+
+    async def send(self, writer, status: int, body: bytes, ctype: str, extra: dict[str, str] | None = None) -> None:
+        writer.write(self.head(status, ctype, len(body), extra) + body)
         await writer.drain()
+
+    async def feed(self, writer, headers: dict[str, str], profile: str) -> None:
+        """Stream a recorded camera clip. Browsers need HTTP Range support to play (and loop) large video."""
+        path = self.feed_dir / FEED_FILES[profile] if self.feed_dir else None
+        if path is None or not path.is_file():
+            return await self.json(writer, 404, {"error": "NOT_FOUND", "message": f"{FEED_FILES[profile]} not found"})
+        size = path.stat().st_size
+        start, end, status = 0, size - 1, 200
+        if m := re.fullmatch(r"bytes=(\d*)-(\d*)", headers.get("range", "").strip()):
+            first, last = m.groups()
+            if first:
+                start, end = int(first), min(int(last), size - 1) if last else size - 1
+            elif last:  # suffix range: the final N bytes (players read the mp4 index from the tail)
+                start = max(0, size - int(last))
+            if not (first or last) or start > end or start >= size:
+                return await self.send(writer, 416, b"", "text/plain", {"Content-Range": f"bytes */{size}"})
+            status = 206
+        length = end - start + 1
+        extra = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=60"}
+        if status == 206:
+            extra["Content-Range"] = f"bytes {start}-{end}/{size}"
+        writer.write(self.head(status, "video/mp4", length, extra))
+        with path.open("rb") as f:
+            f.seek(start)
+            while length > 0:
+                chunk = await asyncio.to_thread(f.read, min(FEED_CHUNK, length))
+                if not chunk:
+                    break
+                writer.write(chunk)
+                await writer.drain()    # raises ConnectionError if the player seeked away or closed the tab
+                length -= len(chunk)
 
     async def json(self, writer, status: int, data: Any) -> None:
         await self.send(writer, status, json.dumps(data, default=str).encode(), "application/json")
@@ -392,6 +441,8 @@ class Server:
                 return await self.static(writer, "index.html", headers)
             if path.lstrip("/") in STATIC_TYPES:
                 return await self.static(writer, path.lstrip("/"), headers)
+            if m := re.fullmatch(r"/feed/(main|sub)\.mp4", path):
+                return await self.feed(writer, headers, m.group(1).upper())
             if path == "/api/state":
                 return await self.json(writer, 200, self.fleet.snapshot())
             if path == "/api/stream":
@@ -457,13 +508,19 @@ async def main() -> None:
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--speed", type=float, default=4.0, help="simulation time compression (default 4x)")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--feed-dir", type=Path, default=find_feed_dir(),
+                    help="folder with camera_main.mp4 and camera_sub.mp4 (default: nearest camera_feed/ above this file)")
     ap.add_argument("--open", action="store_true", help="open the console in the default browser")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
     logging.getLogger("sentinel_hwsim").setLevel(logging.WARNING)  # wire faults only; the UI shows the full trace
 
-    fleet = Fleet(speed=args.speed, seed=args.seed)
-    server = Server(fleet, args.host, args.port)
+    fleet = Fleet(speed=args.speed, seed=args.seed, feed_dir=args.feed_dir)
+    server = Server(fleet, args.host, args.port, args.feed_dir)
+    if fleet.feeds:
+        log.info("camera feeds: %s from %s", ", ".join(f"{p} ({FEED_FILES[p]})" for p in fleet.feeds), args.feed_dir)
+    else:
+        log.warning("no camera feed clips found (%s); the Cameras page will show a placeholder", args.feed_dir)
     tasks = fleet.start()
     srv = await asyncio.start_server(server.handle, args.host, args.port)
     url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '::') else args.host}:{args.port}/"

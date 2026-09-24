@@ -118,14 +118,15 @@
 
           <div class="detail__grid">
             <div class="stack">
-              <figure class="snapshot">
-                <div class="snapshot__frame" id="snap-frame">
-                  <img id="snap-img" alt="" width="640" height="360" decoding="async" hidden>
-                  <p class="snapshot__empty" id="snap-empty">No snapshot yet</p>
+              <figure class="feed">
+                <div class="feed__frame">
+                  <video class="feed__video" id="feed-video" muted loop playsinline preload="metadata" disablepictureinpicture hidden></video>
+                  <p class="feed__badge" id="feed-badge">—</p>
+                  <p class="feed__empty" id="feed-empty">Loading feed…</p>
                 </div>
                 <figcaption>
-                  <span id="snap-caption">Simulated JPEG-style frame (gradient placeholder)</span>
-                  <button type="button" class="btn btn--sm" id="snap-btn">Take snapshot</button>
+                  <span id="feed-caption">—</span>
+                  <button type="button" class="btn btn--sm" id="feed-toggle">Pause feed</button>
                 </figcaption>
               </figure>
 

@@ -17,6 +17,7 @@ python ui/server.py --open     # open the browser for you as well
 | `--host` | 127.0.0.1 | Bind address. On loopback, requests with a foreign `Host` header are refused. |
 | `--speed` | 4 | Simulation time compression |
 | `--seed` | 7 | Deterministic device behaviour |
+| `--feed-dir` | nearest `camera_feed/` above `ui/` | Folder holding `camera_main.mp4` and `camera_sub.mp4` |
 
 There's no build step and nothing to install beyond the package itself. The server uses only the Python standard library (asyncio HTTP + Server-Sent Events). The frontend is three static files.
 
@@ -33,7 +34,7 @@ ui/
 | Route | Purpose |
 |---|---|
 | `#/overview` | Key figures, alert history (one per state transition), camera tiles, latest events |
-| `#/cameras/CAM-00x` | Identity, live fps/bitrate, snapshot, stream URIs, PTZ and encoder commands, fault injection |
+| `#/cameras/CAM-00x` | Identity, live fps/bitrate, camera feed, stream URIs, PTZ and encoder commands, fault injection |
 | `#/node` | Layered health check (node → runtime → inference → pipe), telemetry, failure controls, model deploy, watchlist |
 | `#/events` | Filterable live AI event feed and the dead-letter queue |
 | `#/trace` | Every simulated wire request, with latency and injected faults |
@@ -45,13 +46,23 @@ ui/
 | GET | `/api/state` | Full snapshot |
 | GET | `/api/stream` | SSE: `state`, `camera`, `node`, `ai_event`, `alert`, `dlq` |
 | GET | `/api/trace?limit=N` | Last N wire requests |
-| GET | `/api/devices/{id}/snapshot` | PNG |
+| GET | `/api/devices/{id}/snapshot` | PNG (still available; the UI no longer shows it) |
+| GET | `/feed/main.mp4` · `/feed/sub.mp4` | Recorded clips from `camera_feed/`, HTTP Range supported |
 | POST | `/api/devices/{cam}/ptz` · `encoder` | `{pan,tilt,zoom}` · `{profile,fps,bitrate_kbps}` |
 | POST | `/api/devices/{id}/fault` · `offline` · `revoke` · `heal` | `{fault}` · `{on}` · `{on}` · `{}` |
 | POST | `/api/devices/{node}/crash` · `restart` · `stall` · `unstall` · `cut` · `restore` | `{}` |
 | POST | `/api/devices/{node}/ambient` · `model` · `watchlist` | `{celsius}` · `{model_version}` · `{plates:[]}` |
 
 POSTs must be `application/json`. That forces a CORS preflight, so other websites can't drive the console. Device errors come back as `502 {error: <ErrorCode>, message, retryable}`.
+
+## Camera feed
+
+The simulator has no pixels of its own, so the Cameras page plays two recorded clips from `camera_feed/` (`camera_main.mp4`, `camera_sub.mp4`) in the slot to the left of the pan/tilt/zoom controls. The cameras alternate between them: **CAM-001 MAIN, CAM-002 SUB, CAM-003 MAIN, CAM-004 SUB**. To change the assignment, edit the `"feed"` value in `Fleet.__init__` in `server.py`.
+
+- The clip loops, muted, and starts automatically. **Pause feed** stops it. It starts paused for visitors who prefer reduced motion, and it pauses when you leave the Cameras page.
+- If a camera goes offline or loses its credentials, its feed shows **No signal** and resumes when the camera recovers.
+- If a clip is missing, the slot explains where to put the file.
+- The server streams the files with HTTP Range requests, so the 4K clips play without loading fully into memory.
 
 ## Design system
 
@@ -102,7 +113,7 @@ Wide tables scroll inside a focusable region, so the page itself never scrolls s
 
 ## Performance
 
-- **Payload.** No framework, web fonts or images, apart from on-demand snapshots (blob URLs, fixed 16:9 frame so nothing shifts). About 78 KB of static files uncompressed, gzip-compressed by the server.
+- **Payload.** No framework, web fonts or images. The feed is the only heavy asset: one `<video preload="metadata">` streamed by Range request, in a fixed 16:9 frame so nothing shifts. About 78 KB of static files uncompressed, gzip-compressed by the server.
 - **Critical path.** One render-blocking stylesheet in `<head>`. The script is `type="module"`, so it's deferred. The HTML ships a full skeleton, so first paint needs no JavaScript.
 - **Updates.** Server-Sent Events replace polling. DOM updates are batched with `requestAnimationFrame`. Tables are capped at 100 rows and the event buffer at 300. The trace page polls only while it's visible and the tab isn't hidden.
 - **Security headers.** A strict CSP (`default-src 'self'`, no inline script or style), `nosniff` and `no-referrer`. All device data is rendered with `textContent`, because garbled payloads can contain HTML.
