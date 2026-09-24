@@ -11,6 +11,7 @@ import struct
 import zlib
 from dataclasses import dataclass
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from ..clock import SimClock
@@ -54,12 +55,14 @@ class CameraModel:
     def __init__(self, device_id: str, clock: SimClock, rng: random.Random, *,
                  ip: str = "10.20.0.11", rtsp_base: str | None = None, serial: str | None = None,
                  vendor: str = "SimVision", model: str | None = None, firmware: str = "V5.7.3 build 260812",
-                 clock_offset_s: float = 0.0, clock_drift_s_per_hour: float = 1.2, ptz: bool = True):
+                 clock_offset_s: float = 0.0, clock_drift_s_per_hour: float = 1.2, ptz: bool = True,
+                 stream_files: dict[str, Any] | None = None, media_files: dict[str, Any] | None = None):
         self.device_id = device_id
         self.clock = clock
         self.rng = rng
         self.ip = ip
         self.rtsp_base = rtsp_base or f"rtsp://{ip}:554"
+        self.stream_files = stream_files or media_files or {}
         self.serial = serial or f"SV{rng.randrange(10**9, 10**10)}"
         self.vendor, self.firmware = vendor, firmware
         self.model = model or ("SV-IPC-4MP-PTZ" if ptz else "SV-IPC-4MP-BULLET")
@@ -115,7 +118,25 @@ class CameraModel:
             return _fault("ter:InvalidArgVal/ter:NoProfile", f"profile {profile} not found")
         self._advance()
         p = self.profiles[profile]
-        return {"MediaUri": {"Uri": f"{self.rtsp_base.rstrip('/')}/{p.path}", "InvalidAfterConnect": False},
+
+        # Use mapped local video file if configured for this profile
+        if self.stream_files and profile in self.stream_files:
+            target = self.stream_files[profile]
+            if hasattr(target, "as_uri"):
+                uri = target.as_uri()
+            elif isinstance(target, str) and ("://" in target):
+                uri = target
+            else:
+                p_obj = Path(target)
+                if not p_obj.exists():
+                    media_candidate = Path(__file__).resolve().parent.parent / "media" / target
+                    if media_candidate.exists():
+                        p_obj = media_candidate
+                uri = p_obj.resolve().as_uri() if p_obj.exists() else str(target)
+        else:
+            uri = f"{self.rtsp_base.rstrip('/')}/{p.path}"
+
+        return {"MediaUri": {"Uri": uri, "InvalidAfterConnect": False},
                 "VideoEncoderConfiguration": {
                     "Encoding": p.codec, "Resolution": {"Width": p.width, "Height": p.height},
                     "RateControl": {"FrameRateLimit": p.fps, "BitrateLimit": p.bitrate_kbps}}}

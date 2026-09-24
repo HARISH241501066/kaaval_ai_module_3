@@ -18,6 +18,7 @@ from sentinel_hwsim import (
     Simulator,
     create_driver,
     enable_trace_logging,
+    MEDIA_DIR,
 )
 
 
@@ -68,10 +69,18 @@ async def inspect_camera(cam: CameraDriver) -> None:
 
 async def main() -> None:
     enable_trace_logging(logging.INFO)  # use logging.DEBUG to see every wire call
+
+    # Local video files from the project media folder mapped to MAIN and SUB streams
+    main_video = MEDIA_DIR / "camera_main.mp4"
+    sub_video = MEDIA_DIR / "camera_sub.mp4"
+
     sim = Simulator(speed=10, seed=7)   # 10x time compression
     cam = create_driver(DriverConfig(kind="camera", device_id="CAM-001", mode="mock",
                                      sim={"faults": "healthy", "clock_offset_s": 37.0,
-                                          "rtsp_base": "rtsp://mediamtx:8554/sim/cam001"}),
+                                          "stream_files": {
+                                              "MAIN": main_video,
+                                              "SUB": sub_video,
+                                          }}),
                         simulator=sim)
     await inspect_camera(cam)
 
