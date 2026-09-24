@@ -1,0 +1,25 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing & Linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build & Packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# OS & IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

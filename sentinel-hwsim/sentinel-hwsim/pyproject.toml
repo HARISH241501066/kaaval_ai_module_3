@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel-hwsim"
+version = "0.1.0"
+description = "Simulated camera and Kaaval AI node hardware for Sentinel Module 3 prototyping"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff"]
+real = ["onvif-zeep>=0.2", "httpx>=0.27", "hvac>=2"]
+
+[project.scripts]
+kaaval-sim-push = "sentinel_hwsim.push:main"
+
+[tool.setuptools.packages.find]
+include = ["sentinel_hwsim*"]
+
+[tool.ruff]
+line-length = 125
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

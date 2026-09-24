@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overview · Sentinel console</title>
+  <meta name="description" content="Operator console for the Sentinel Module 3 hardware simulator: cameras, Kaaval AI node health, live events and wire trace.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a class="brand" href="#/overview">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <path d="M16 3 5 7v8c0 7 4.7 12 11 14 6.3-2 11-7 11-14V7L16 3Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+          <circle cx="16" cy="15" r="4" fill="currentColor"/>
+        </svg>
+        <span class="brand__name">Sentinel</span>
+        <span class="brand__sub">M3 hardware console</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <ul class="nav__list">
+          <li><a class="nav__link" href="#/overview" data-route="overview">Overview</a></li>
+          <li><a class="nav__link" href="#/cameras" data-route="cameras">Cameras</a></li>
+          <li><a class="nav__link" href="#/node" data-route="node">AI node</a></li>
+          <li><a class="nav__link" href="#/events" data-route="events">Events</a></li>
+          <li><a class="nav__link" href="#/trace" data-route="trace">Wire trace</a></li>
+        </ul>
+      </nav>
+      <p class="live" id="live" role="status"><span class="live__dot" aria-hidden="true"></span><span id="live-label">Connecting…</span></p>
+    </div>
+  </header>
+
+  <main id="main" class="container main" tabindex="-1" aria-busy="true">
+
+    <!-- ================================================= Overview -->
+    <section class="view" data-view="overview" aria-labelledby="h-overview">
+      <header class="view__header">
+        <h1 id="h-overview" tabindex="-1">Overview</h1>
+        <p class="view__lede">Live state of the simulated fleet, monitored through the driver contract exactly as M3-C6 would monitor real hardware.</p>
+      </header>
+
+      <ul class="kpis" aria-label="Key figures">
+        <li class="panel kpi" id="kpi-cameras"><span class="kpi__label">Cameras online</span><span class="kpi__value"><span class="skeleton"></span></span><span class="kpi__note"></span></li>
+        <li class="panel kpi" id="kpi-node"><span class="kpi__label">AI node</span><span class="kpi__value"><span class="skeleton"></span></span><span class="kpi__note"></span></li>
+        <li class="panel kpi" id="kpi-events"><span class="kpi__label">AI events · last 60 s</span><span class="kpi__value"><span class="skeleton"></span></span><span class="kpi__note"></span></li>
+        <li class="panel kpi" id="kpi-alerts"><span class="kpi__label">Open alerts</span><span class="kpi__value"><span class="skeleton"></span></span><span class="kpi__note"></span></li>
+      </ul>
+
+      <div class="grid grid--overview">
+        <section class="panel" aria-labelledby="h-alerts">
+          <div class="panel__header">
+            <h2 id="h-alerts">Alerts</h2>
+            <span class="panel__meta">One per state transition, per device</span>
+          </div>
+          <ol class="alert-list" id="alert-list" aria-label="Alert history, newest first" tabindex="0"></ol>
+          <p class="empty" id="alert-empty">No alerts yet. Break something from the Cameras or AI node pages.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="h-tiles">
+          <div class="panel__header">
+            <h2 id="h-tiles">Cameras</h2>
+            <a class="panel__meta" href="#/cameras">Manage cameras</a>
+          </div>
+          <ul class="tiles" id="camera-tiles"></ul>
+        </section>
+      </div>
+
+      <section class="panel panel--flush" aria-labelledby="h-latest">
+        <div class="panel__header">
+          <h2 id="h-latest">Latest AI events</h2>
+          <a class="panel__meta" href="#/events">All events</a>
+        </div>
+        <div class="table-wrap" role="region" aria-labelledby="h-latest" tabindex="0">
+          <table class="table">
+            <thead><tr><th scope="col">Device time</th><th scope="col">Camera</th><th scope="col">Type</th><th scope="col">Details</th><th scope="col" class="num">Conf.</th></tr></thead>
+            <tbody id="latest-events"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="latest-empty">Waiting for the first events…</p>
+      </section>
+    </section>
+
+    <!-- ================================================== Cameras -->
+    <section class="view" data-view="cameras" aria-labelledby="h-cameras" hidden>
+      <header class="view__header">
+        <h1 id="h-cameras" tabindex="-1">Cameras</h1>
+        <p class="view__lede">ONVIF-style IP cameras. Read status and streams, send PTZ and encoder commands, and inject faults to test M3 resilience.</p>
+      </header>
+
+      <div class="split">
+        <nav class="picker" aria-label="Select camera"><ul class="picker__list" id="camera-picker"></ul></nav>
+
+        <article class="panel detail" id="camera-detail" aria-labelledby="cam-title">
+          <header class="stack">
+            <div class="detail__title">
+              <h2 id="cam-title">—</h2>
+              <span id="cam-pill"></span>
+            </div>
+            <p class="detail__sub" id="cam-sub"></p>
+            <p class="errline" id="cam-error" hidden></p>
+          </header>
+
+          <dl class="stats" id="cam-stats">
+            <div class="stat"><dt>Frame rate</dt><dd id="cam-fps">—</dd></div>
+            <div class="stat"><dt>Bitrate</dt><dd id="cam-bitrate">—</dd></div>
+            <div class="stat"><dt>Uptime</dt><dd id="cam-uptime">—</dd></div>
+            <div class="stat"><dt>Session</dt><dd id="cam-state">—</dd></div>
+            <div class="stat"><dt>Errors seen</dt><dd id="cam-errors">—</dd></div>
+          </dl>
+
+          <hr class="divider">
+
+          <div class="detail__grid">
+            <div class="stack">
+              <figure class="snapshot">
+                <div class="snapshot__frame" id="snap-frame">
+                  <img id="snap-img" alt="" width="640" height="360" decoding="async" hidden>
+                  <p class="snapshot__empty" id="snap-empty">No snapshot yet</p>
+                </div>
+                <figcaption>
+                  <span id="snap-caption">Simulated JPEG-style frame (gradient placeholder)</span>
+                  <button type="button" class="btn btn--sm" id="snap-btn">Take snapshot</button>
+                </figcaption>
+              </figure>
+
+              <section class="group" aria-labelledby="h-streams">
+                <h3 id="h-streams">Stream sources</h3>
+                <dl class="stack" id="cam-streams"></dl>
+              </section>
+            </div>
+
+            <div class="stack">
+              <form class="form" id="ptz-form" novalidate>
+                <fieldset class="fieldset">
+                  <legend>Pan / tilt / zoom</legend>
+                  <div class="range-field"><label for="ptz-pan" class="field__label">Pan</label><input class="range" type="range" id="ptz-pan" name="pan" min="-1" max="1" step="0.05" value="0"><output for="ptz-pan" id="ptz-pan-out">0.00</output></div>
+                  <div class="range-field"><label for="ptz-tilt" class="field__label">Tilt</label><input class="range" type="range" id="ptz-tilt" name="tilt" min="-1" max="1" step="0.05" value="0"><output for="ptz-tilt" id="ptz-tilt-out">0.00</output></div>
+                  <div class="range-field"><label for="ptz-zoom" class="field__label">Zoom</label><input class="range" type="range" id="ptz-zoom" name="zoom" min="0" max="1" step="0.05" value="0"><output for="ptz-zoom" id="ptz-zoom-out">0.00</output></div>
+                  <p class="field__hint" id="ptz-pos" aria-live="polite">Position: —</p>
+                </fieldset>
+                <div class="cluster"><button class="btn btn--primary" type="submit">Move camera</button></div>
+              </form>
+              <p class="callout" id="ptz-none" hidden>Fixed bullet camera. This model does not support PTZ.</p>
+
+              <hr class="divider">
+
+              <form class="form" id="enc-form" novalidate>
+                <fieldset class="fieldset">
+                  <legend>Encoder</legend>
+                  <div class="form__row">
+                    <div class="field">
+                      <label class="field__label" for="enc-profile">Profile</label>
+                      <select class="select" id="enc-profile" name="profile"><option value="MAIN">MAIN</option><option value="SUB">SUB</option></select>
+                    </div>
+                    <div class="field">
+                      <label class="field__label" for="enc-fps">Frame rate</label>
+                      <input class="input" id="enc-fps" name="fps" type="number" inputmode="numeric" min="1" max="30" step="1" value="15" required aria-describedby="enc-fps-hint enc-error">
+                      <span class="field__hint" id="enc-fps-hint">1–30 fps</span>
+                    </div>
+                    <div class="field">
+                      <label class="field__label" for="enc-bitrate">Bitrate</label>
+                      <input class="input" id="enc-bitrate" name="bitrate_kbps" type="number" inputmode="numeric" min="64" max="16384" step="1" value="1500" required aria-describedby="enc-br-hint enc-error">
+                      <span class="field__hint" id="enc-br-hint">64–16384 kbps</span>
+                    </div>
+                  </div>
+                  <p class="field__error" id="enc-error" role="alert"></p>
+                </fieldset>
+                <div class="cluster"><button class="btn btn--primary" type="submit">Apply encoder settings</button></div>
+              </form>
+
+              <hr class="divider">
+
+              <section class="group" aria-labelledby="h-cam-chaos">
+                <h3 id="h-cam-chaos">Fault injection <span class="panel__meta">(simulator only)</span></h3>
+                <form class="form__row form__row--end" id="fault-form" novalidate>
+                  <div class="field">
+                    <label class="field__label" for="fault-kind">Fail the next operation with</label>
+                    <select class="select" id="fault-kind" name="fault">
+                      <option value="timeout">Timeout</option>
+                      <option value="drop_connection">Dropped session</option>
+                      <option value="invalid_data">Garbled payload</option>
+                      <option value="auth_failure">Auth failure</option>
+                      <option value="connect_failure">Connect failure</option>
+                    </select>
+                  </div>
+                  <div class="field"><button class="btn btn--danger" type="submit">Inject once</button></div>
+                </form>
+                <div class="cluster">
+                  <button type="button" class="btn btn--danger" id="cam-offline" aria-pressed="false">Take offline</button>
+                  <button type="button" class="btn btn--danger" id="cam-revoke" aria-pressed="false">Revoke credentials</button>
+                  <button type="button" class="btn" id="cam-heal">Heal all faults</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================================================== AI node -->
+    <section class="view" data-view="node" aria-labelledby="h-node" hidden>
+      <header class="view__header">
+        <h1 id="h-node" tabindex="-1">AI node</h1>
+        <p class="view__lede">Kaaval edge node on an RDK X5. Break it layer by layer and watch the classifier tell a crashed runtime from a stalled model or a cut event pipe.</p>
+      </header>
+
+      <div class="grid grid--halves">
+        <div class="stack">
+          <section class="panel stack" aria-labelledby="node-title">
+            <div class="detail__title">
+              <h2 id="node-title">EDGE-NODE-001</h2>
+              <span id="node-pill"></span>
+            </div>
+            <p class="detail__sub" id="node-sub"></p>
+            <p class="errline" id="node-error" hidden></p>
+
+            <section class="group" aria-labelledby="h-layers">
+              <h3 id="h-layers">Layered health check</h3>
+              <ol class="layers" id="node-layers"></ol>
+            </section>
+          </section>
+
+          <section class="panel stack" aria-labelledby="h-node-metrics">
+            <h2 id="h-node-metrics">Telemetry</h2>
+            <div class="meter" id="m-cpu"><div class="meter__head"><span>CPU</span><span>—</span></div><div class="meter__track" aria-hidden="true"><div class="meter__fill"></div></div></div>
+            <div class="meter" id="m-mem"><div class="meter__head"><span>Memory</span><span>—</span></div><div class="meter__track" aria-hidden="true"><div class="meter__fill"></div></div></div>
+            <div class="meter" id="m-temp"><div class="meter__head"><span>SoC temperature <span class="panel__meta">(throttles at 85 °C)</span></span><span>—</span></div><div class="meter__track" aria-hidden="true"><div class="meter__fill"></div><div class="meter__mark" id="m-temp-mark"></div></div></div>
+            <dl class="stats">
+              <div class="stat"><dt>Inference</dt><dd id="n-fps">—</dd></div>
+              <div class="stat"><dt>Latency</dt><dd id="n-latency">—</dd></div>
+              <div class="stat"><dt>Last heartbeat</dt><dd id="n-hb">—</dd></div>
+              <div class="stat"><dt>Events received</dt><dd id="n-events">—</dd></div>
+              <div class="stat"><dt>Heartbeats</dt><dd id="n-hbs">—</dd></div>
+              <div class="stat"><dt>Dead letters</dt><dd id="n-dlq">—</dd></div>
+            </dl>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel stack" aria-labelledby="h-node-chaos">
+            <div class="panel__header"><h2 id="h-node-chaos">Failure controls</h2><span class="panel__meta">Simulator only</span></div>
+            <div class="group" role="group" aria-labelledby="g-runtime"><span class="group__label" id="g-runtime">Runtime</span>
+              <div class="cluster"><button type="button" class="btn btn--danger" data-node="crash">Crash runtime</button><button type="button" class="btn" data-node="restart">Restart runtime</button></div></div>
+            <div class="group" role="group" aria-labelledby="g-inf"><span class="group__label" id="g-inf">Inference</span>
+              <div class="cluster"><button type="button" class="btn btn--danger" data-node="stall">Stall at 0 fps</button><button type="button" class="btn" data-node="unstall">Resume</button></div></div>
+            <div class="group" role="group" aria-labelledby="g-pipe"><span class="group__label" id="g-pipe">Event pipe</span>
+              <div class="cluster"><button type="button" class="btn btn--danger" data-node="cut">Cut pipe</button><button type="button" class="btn" data-node="restore">Restore (late flush)</button></div></div>
+            <div class="group" role="group" aria-labelledby="g-power"><span class="group__label" id="g-power">Power</span>
+              <div class="cluster"><button type="button" class="btn btn--danger" data-node="offline" data-on="true">Power off</button><button type="button" class="btn" data-node="heal">Power on &amp; heal</button></div></div>
+            <form class="form" id="heat-form" novalidate>
+              <div class="range-field"><label for="heat" class="field__label">Ambient</label><input class="range" type="range" id="heat" name="celsius" min="20" max="65" step="1" value="34" aria-describedby="heat-hint"><output for="heat" id="heat-out">34 °C</output></div>
+              <p class="field__hint" id="heat-hint">Around 55 °C ambient pushes the SoC past 85 °C and it throttles. Heating up takes a few simulated minutes.</p>
+              <div class="cluster"><button type="submit" class="btn">Set ambient temperature</button></div>
+            </form>
+          </section>
+
+          <section class="panel stack" aria-labelledby="h-node-config">
+            <h2 id="h-node-config">Configuration</h2>
+            <dl class="stats">
+              <div class="stat"><dt>Functions</dt><dd id="n-functions">—</dd></div>
+              <div class="stat"><dt>Assigned cameras</dt><dd id="n-cams">—</dd></div>
+            </dl>
+            <form class="form" id="model-form" novalidate>
+              <div class="field">
+                <label class="field__label" for="model-version">Deploy model version</label>
+                <input class="input mono" id="model-version" name="model_version" type="text" autocomplete="off" spellcheck="false" required aria-describedby="model-hint model-error">
+                <span class="field__hint" id="model-hint">The runtime restarts to load it. The console waits until the new version is confirmed.</span>
+                <p class="field__error" id="model-error" role="alert"></p>
+              </div>
+              <div class="cluster"><button class="btn btn--primary" type="submit">Deploy model</button></div>
+            </form>
+            <form class="form" id="watch-form" novalidate>
+              <div class="field">
+                <label class="field__label" for="watch-plates">Watchlist plates</label>
+                <input class="input mono" id="watch-plates" name="plates" type="text" autocomplete="off" spellcheck="false" placeholder="GJ01AB1234, GJ05CD4321" aria-describedby="watch-hint watch-error">
+                <span class="field__hint" id="watch-hint">Comma-separated. Matching PLATE_READs raise WATCHLIST_HIT events.</span>
+                <p class="field__error" id="watch-error" role="alert"></p>
+              </div>
+              <div class="cluster"><button class="btn" type="submit">Save watchlist</button></div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================== Events -->
+    <section class="view" data-view="events" aria-labelledby="h-events" hidden>
+      <header class="view__header">
+        <h1 id="h-events" tabindex="-1">Events</h1>
+        <p class="view__lede">AI events as mapped by the driver into strict contract DTOs. Malformed items never reach this table. They go to the dead-letter queue below.</p>
+      </header>
+
+      <section class="panel panel--flush" aria-labelledby="h-feed">
+        <div class="panel__header"><h2 id="h-feed">Live feed</h2><span class="panel__meta" id="feed-count"></span></div>
+        <form class="toolbar" id="event-filters" role="search" aria-label="Filter events">
+          <div class="field"><label class="field__label" for="f-type">Type</label>
+            <select class="select" id="f-type"><option value="">All types</option><option>PLATE_READ</option><option>HELMET_VIOLATION</option><option>TRIPLE_RIDING</option><option>VEHICLE_DETECTION</option><option>WATCHLIST_HIT</option></select></div>
+          <div class="field"><label class="field__label" for="f-cam">Camera</label>
+            <select class="select" id="f-cam"><option value="">All cameras</option></select></div>
+          <div class="field"><label class="field__label" for="f-q">Plate contains</label>
+            <input class="input mono" id="f-q" type="search" autocomplete="off" spellcheck="false"></div>
+          <label class="check"><input type="checkbox" id="f-pause"> Pause feed</label>
+        </form>
+        <div class="table-wrap" role="region" aria-labelledby="h-feed" tabindex="0">
+          <table class="table">
+            <thead><tr><th scope="col">Device time</th><th scope="col">Camera</th><th scope="col">Type</th><th scope="col">Details</th><th scope="col" class="num">Conf.</th><th scope="col">Model</th></tr></thead>
+            <tbody id="event-rows"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="event-empty">No matching events.</p>
+      </section>
+
+      <section class="panel panel--flush" aria-labelledby="h-dlq">
+        <div class="panel__header"><h2 id="h-dlq">Dead-letter queue</h2><span class="panel__meta">Payloads that failed strict mapping</span></div>
+        <div class="table-wrap" role="region" aria-labelledby="h-dlq" tabindex="0">
+          <table class="table">
+            <thead><tr><th scope="col">Received</th><th scope="col">Reason</th><th scope="col">Sample</th></tr></thead>
+            <tbody id="dlq-rows"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="dlq-empty">Empty. Garbled events land here instead of crashing the stream.</p>
+      </section>
+    </section>
+
+    <!-- ==================================================== Trace -->
+    <section class="view" data-view="trace" aria-labelledby="h-trace" hidden>
+      <header class="view__header">
+        <h1 id="h-trace" tabindex="-1">Wire trace</h1>
+        <p class="view__lede">Every simulated request between the drivers and the devices, including latency and the injected fault, if any. Refreshes every 2 seconds while this page is open.</p>
+      </header>
+      <section class="panel panel--flush" aria-labelledby="h-trace-table">
+        <div class="panel__header"><h2 id="h-trace-table">Recent requests</h2><span class="panel__meta" id="trace-meta"></span></div>
+        <form class="toolbar" id="trace-filters" aria-label="Filter trace">
+          <div class="field"><label class="field__label" for="t-dev">Device</label><select class="select" id="t-dev"><option value="">All devices</option></select></div>
+          <label class="check"><input type="checkbox" id="t-faults"> Faults only</label>
+          <label class="check"><input type="checkbox" id="t-polls"> Hide event polls</label>
+        </form>
+        <div class="table-wrap" role="region" aria-labelledby="h-trace-table" tabindex="0">
+          <table class="table">
+            <thead><tr><th scope="col" class="num">#</th><th scope="col">Device time</th><th scope="col">Device</th><th scope="col">Operation</th><th scope="col" class="num">Latency</th><th scope="col">Outcome</th></tr></thead>
+            <tbody id="trace-rows"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="trace-empty" hidden>No matching requests.</p>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>sentinel-hwsim 0.1.0 · simulated hardware, no devices attached</span>
+      <span id="footer-meta"></span>
+    </div>
+  </footer>
+
+  <div class="toasts" id="toasts" aria-hidden="true"></div>
+  <div class="visually-hidden" id="announce-polite" role="status" aria-live="polite"></div>
+  <div class="visually-hidden" id="announce-assertive" role="alert" aria-live="assertive"></div>
+</body>
+</html>
