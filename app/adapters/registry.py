@@ -11,6 +11,7 @@ from app.adapters.base import BaseAdapter
 from app.adapters.kaaval_edge import KaavalEdgeAdapter
 from app.adapters.kaaval_server import KaavalServerAdapter
 from app.adapters.live_detector import LiveDetectorAdapter
+from app.adapters.sentinel_grid import SentinelGridAdapter
 
 logger = logging.getLogger("sentinel.m3.adapters")
 
@@ -41,6 +42,7 @@ class AdapterRegistry:
             self.register(KaavalEdgeAdapter())
             self.register(KaavalServerAdapter())
             self.register(LiveDetectorAdapter())
+            self.register(SentinelGridAdapter())
             self._default_adapters_registered = True
 
 

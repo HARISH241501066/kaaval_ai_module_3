@@ -20,6 +20,10 @@ from app.api.systems import router as systems_router
 from app.api.ingestion import router as ingestion_router
 from app.api.events import router as events_router
 from app.api.provenance import router as provenance_router
+from app.api.grid import router as grid_router, federation_router as broker_router
+from app.live.redact import Redactor, install_log_redaction
+from app.relay.manager import get_relay_manager
+from app.services.grid_scheduler import GridScheduler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,8 +52,20 @@ async def lifespan(app: FastAPI):
     registry = get_adapter_registry()
     logger.info(f"Loaded adapters: {[a['name'] for a in registry.list_adapters()]}")
 
+    # The grid login must never reach a log line, from any logger (uvicorn, httpx, our own).
+    manager = get_relay_manager()
+    if manager.adapter.grid.configured:
+        install_log_redaction(Redactor(*manager.adapter.grid.secrets()))
+    scheduler = None
+    if manager.adapter.grid.configured and settings.grid_sync_interval_s > 0:
+        scheduler = GridScheduler(manager, settings)
+        scheduler.start()
+        logger.info("Sentinel Grid catalogue sync every %ss", settings.grid_sync_interval_s)
+
     logger.info("Sentinel Module 3 Backend ready. Swagger docs available at /docs")
     yield
+    if scheduler:
+        scheduler.stop()
     logger.info("Shutting down Sentinel Module 3 Backend.")
 
 
@@ -94,6 +110,8 @@ app.include_router(systems_router)
 app.include_router(ingestion_router)
 app.include_router(events_router)
 app.include_router(provenance_router)
+app.include_router(grid_router)
+app.include_router(broker_router)
 
 
 @app.get("/", include_in_schema=False)
