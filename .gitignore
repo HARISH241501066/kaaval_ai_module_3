@@ -30,10 +30,14 @@ Thumbs.db
 !.env.example
 
 # Downloaded detector weights and generated relay config
-models/
+# (root-scoped so app/models/ stays trackable — a bare `models/` swallowed app/models/grid.py once)
+/models/
+/evidence/
 relay/bin/
 relay/generated/
 *.key
 *.pem
 *.crt
 files/__pycache__/
+camera_*_mid.jpg
+camera_*_small.jpg
