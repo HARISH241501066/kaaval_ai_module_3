@@ -49,6 +49,23 @@ class Settings(BaseSettings):
     sentinel_grid_rtsp_port: int = 8554
     sentinel_grid_web_base: str = "https://cctv.corp8.cloud"
 
+    sentinel_grid_whep_port: int = 8889
+    grid_sync_interval_s: int = 900   # C2 re-sync period; 0 = only when POST /api/v1/grid/sync is called
+
+    # --- stream relay (C3): our MediaMTX, the only thing browsers and Module 2 ever talk to ---
+    relay_enabled: bool = True
+    relay_bin: str = "relay/bin/mediamtx.exe"
+    relay_config_path: str = "relay/generated/mediamtx.yml"      # holds grid credentials: git-ignored
+    relay_api_url: str = "http://127.0.0.1:9997"
+    relay_public_host: str = "localhost"                          # host the BROWSER uses to reach the relay
+    relay_rtsp_port: int = 8654
+    relay_hls_port: int = 8888
+    relay_webrtc_port: int = 8889
+    relay_allow_origins: str = "http://127.0.0.1:8765,http://localhost:8765"   # who may call the relay from a browser
+    relay_idle_close_s: int = 60      # upstream is closed this long after the last viewer leaves
+    relay_probe_timeout_s: int = 12   # how long a source gets to start before we try the next protocol
+    ffmpeg_path: str = ""             # empty = look on PATH
+
     # --- live detection worker (python -m app.live.worker) ---
     live_cameras: str = ""            # comma separated grid ids; empty = first live_max_cameras of the catalogue
     live_max_cameras: int = 3         # every open camera costs the grid one stream copy

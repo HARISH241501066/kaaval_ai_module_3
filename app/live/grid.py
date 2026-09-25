@@ -22,6 +22,7 @@ from urllib.parse import quote
 import httpx
 
 from app.core.config import Settings
+from app.grid import urls
 
 log = logging.getLogger("sentinel.m3.grid")
 
@@ -115,18 +116,36 @@ class GridClient:
     # -------------------------------------------------------------------- URLs
     def rtsp_url_public(self, cam_id: str) -> str:
         """Credential-free address: safe to store, log, return from an API."""
-        return f"rtsp://{self._s.sentinel_grid_host}:{self._s.sentinel_grid_rtsp_port}/stream/{cam_id}"
+        return urls.rtsp_public(self._s.sentinel_grid_host, self._s.sentinel_grid_rtsp_port, cam_id)
+
+    def whep_url_public(self, cam_id: str) -> str:
+        return urls.whep_public(self._s.sentinel_grid_host, self._s.sentinel_grid_whep_port, cam_id)
+
+    def hls_url_public(self, cam_id: str) -> str:
+        return urls.hls_public(self._s.sentinel_grid_web_base, cam_id)
 
     def rtsp_url(self, cam_id: str) -> str:
         """
-        The ONLY place a credentialed URL is built. Use it in memory to open a stream, then drop it.
-        Never log it, store it or return it (use rtsp_url_public for that).
+        Credentialed URL, built once by app.grid.urls (email and password percent-encoded there).
+        Use it in memory to open a stream, then drop it. Never log it, store it or return it.
         """
+        self._need_credentials()
+        return urls.rtsp_url(self._s.sentinel_grid_email, self._s.sentinel_grid_password.get_secret_value(),
+                             self._s.sentinel_grid_host, self._s.sentinel_grid_rtsp_port, cam_id)
+
+    def whep_source_url(self, cam_id: str) -> str:
+        """Credentialed `whep://` pull source for the relay config (same rules as rtsp_url)."""
+        self._need_credentials()
+        return urls.whep_source_url(self._s.sentinel_grid_email, self._s.sentinel_grid_password.get_secret_value(),
+                                    self._s.sentinel_grid_host, self._s.sentinel_grid_whep_port, cam_id)
+
+    def basic_auth(self) -> tuple[str, str]:
+        self._need_credentials()
+        return self._s.sentinel_grid_email, self._s.sentinel_grid_password.get_secret_value()
+
+    def _need_credentials(self) -> None:
         if not self.configured:
             raise GridError("SENTINEL_GRID_EMAIL / SENTINEL_GRID_PASSWORD are not set")
-        user = quote(self._s.sentinel_grid_email, safe="")           # "@" -> %40
-        password = quote(self._s.sentinel_grid_password.get_secret_value(), safe="")
-        return f"rtsp://{user}:{password}@{self._s.sentinel_grid_host}:{self._s.sentinel_grid_rtsp_port}/stream/{cam_id}"
 
     # ------------------------------------------------------- connection test
     def ping(self) -> None:
@@ -167,6 +186,23 @@ class GridClient:
         cameras = self.fetch_catalogue()
         log.info("grid connection test passed: %d cameras in the catalogue", len(cameras))
         return cameras
+
+    def hls_server_side(self, cam_id: str) -> tuple[bool, str]:
+        """
+        Can a non-browser client fetch the grid's HLS? Measured, not assumed: log in, ask for the playlist
+        with the session cookie, and see whether a real playlist comes back. (The grid answers 403
+        "browser required" to non-browser clients, so today this is False.)
+        """
+        try:
+            if not self._logged_in:
+                self.login()
+            r = self._request("GET", f"/{cam_id}/index.m3u8")
+        except GridError as e:
+            return False, str(e)
+        if r.status_code == 200 and r.text.lstrip().startswith("#EXTM3U"):
+            return True, "playlist fetched with the session cookie"
+        note = r.text.strip()[:60] if r.status_code == 403 else ""
+        return False, f"HTTP {r.status_code}" + (f' "{note}"' if note else "")
 
     # ----------------------------------------------------------------- helpers
     def _request(self, method: str, path: str, **kw: Any) -> httpx.Response:
