@@ -142,6 +142,7 @@ function route() {
   route.started = true;
   if (view === "events") renderEventTable();
   if (view !== "cameras") feedVideo.pause();
+  if (view !== "overview") pauseGallery();
   trace.toggle(view === "trace");
   renderAll();
 }
@@ -185,6 +186,7 @@ function hydrate(s) {
   if (!store.ready) {
     store.ready = true;
     buildCameraLists();
+    buildGallery();
     selectCamera(store.selectedCam ?? s.cameras[0]?.id);
     $("#main").removeAttribute("aria-busy");
     route();
@@ -192,7 +194,6 @@ function hydrate(s) {
   const m = s.meta;
   $("#footer-meta").textContent = `simulation ${m.speed}× real time · seed ${m.seed} · started ${fmtTime(m.started_at)}`;
   renderAlerts();
-  renderLatest();
   renderEventTable();
   renderDlq();
   schedule();
@@ -206,6 +207,7 @@ function renderAll() {
   if (!store.ready) return;
   renderKpis();
   renderCameraLists();
+  if (store.view === "overview") syncGallery();
   if (store.view === "cameras") renderCameraDetail();
   if (store.view === "node") renderNode();
 }
@@ -263,19 +265,9 @@ function eventRow(ev, { model = false, fresh = false } = {}) {
     model ? h("td", { class: "mono nowrap", text: ev.model_version }) : null);
 }
 
-function renderLatest() {
-  const rows = store.events.slice(-8).reverse().map((ev) => eventRow(ev));
-  $("#latest-events").replaceChildren(...rows);
-  $("#latest-empty").hidden = rows.length > 0;
-}
-
 function onEvent(ev) {
   store.events.push(ev);
   if (store.events.length > MAX_EVENTS) store.events.shift();
-  const latest = $("#latest-events");
-  latest.prepend(eventRow(ev, { fresh: true }));
-  while (latest.rows.length > 8) latest.deleteRow(-1);
-  $("#latest-empty").hidden = true;
   if (store.view === "events" && !$("#f-pause").checked && matches(ev)) {
     const tb = $("#event-rows");
     tb.prepend(eventRow(ev, { model: true, fresh: true }));
@@ -287,21 +279,17 @@ function onEvent(ev) {
 }
 
 // ----------------------------------------------------------------- cameras
-const camEls = new Map();   // id -> { tile, tilePill, tileMeta, pick, pickPill }
+const camEls = new Map();   // id -> { link, pickPill } for the camera picker
 
 function buildCameraLists() {
-  const tiles = [], picks = [];
+  const picks = [];
   for (const id of store.cameras.keys()) {
-    const tilePill = h("span"), tileMeta = h("span", { class: "tile__meta" });
-    const tile = h("li", {}, h("a", { class: "tile", href: `#/cameras/${id}` },
-      h("span", { class: "tile__head" }, h("span", { class: "tile__id", text: id }), tilePill), tileMeta));
     const pickPill = h("span");
     const link = h("a", { class: "picker__item", href: `#/cameras/${id}` }, h("span", { text: id }), pickPill);
-    tiles.push(tile); picks.push(h("li", {}, link));
-    camEls.set(id, { tilePill, tileMeta, link, pickPill });
+    picks.push(h("li", {}, link));
+    camEls.set(id, { link, pickPill });
     store.chaos.set(id, { offline: false, revoke: false });
   }
-  $("#camera-tiles").replaceChildren(...tiles);
   $("#camera-picker").replaceChildren(...picks);
   const opts = (sel, ids) => $(sel).append(...ids.map((id) => h("option", { value: id, text: id })));
   opts("#f-cam", [...store.cameras.keys()]);
@@ -312,12 +300,7 @@ function renderCameraLists() {
   for (const [id, c] of store.cameras) {
     const els = camEls.get(id);
     if (!els) continue;
-    setPill(els.tilePill, c.health);
     setPill(els.pickPill, c.health);
-    const s = c.status;
-    els.tileMeta.textContent = tone(c.health) === "crit"
-      ? (c.last_error?.code ?? "unreachable")
-      : s ? `${fmtNum(s.fps)} fps · ${Math.round(s.bitrate_kbps)} kbps` : "Connecting…";
     if (id === store.selectedCam) els.link.setAttribute("aria-current", "page");
     else els.link.removeAttribute("aria-current");
   }
@@ -395,24 +378,85 @@ let feedPaused = matchMedia("(prefers-reduced-motion: reduce)").matches;   // th
 
 function setText(el, text) { if (el.textContent !== text) el.textContent = text; }
 
-function syncFeed(c) {
-  const src = store.meta?.feeds?.[c.feed], empty = $("#feed-empty");
-  let note = null;
-  if (!src) note = "No feed clip on the server. Put camera_main.mp4 and camera_sub.mp4 in the camera_feed folder.";
-  else if (tone(c.health) === "crit") note = `No signal · ${c.id} is ${label(c.health).toLowerCase()}`;
-  else if (feedVideo.dataset.failed === src) note = "This browser could not play the feed clip.";
+// Why a feed cannot play right now (null = it can).
+function feedNote(c, video, src) {
+  if (!src) return "No feed clip on the server. Put camera_main.mp4 and camera_sub.mp4 in the camera_feed folder.";
+  if (tone(c.health) === "crit") return `No signal · ${c.id} is ${label(c.health).toLowerCase()}`;
+  if (video.dataset.failed === src) return "This browser could not play the feed clip.";
+  return null;
+}
 
+// Show or hide one <video> for camera c. It plays only while `active` (on screen) and the viewer has not paused.
+function driveFeed(video, empty, c, active) {
+  const src = store.meta?.feeds?.[c.feed], note = feedNote(c, video, src);
+  empty.hidden = !note;
+  if (note) setText(empty, note);
+  video.hidden = !!note;
+  if (note) return video.pause();
+  video.setAttribute("aria-label", `${c.id} ${c.feed} camera feed, looping sample clip`);
+  if (video.getAttribute("src") !== src) video.src = src;   // cameras sharing a clip each keep their own player
+  if (active && !feedPaused) { if (video.paused) video.play().catch(() => {}); }   // muted, so autoplay is allowed
+  else if (!video.paused) video.pause();
+}
+
+function syncFeed(c) {
   setText($("#feed-badge"), `${c.id} · ${c.feed}`);
   setText($("#feed-caption"), `${c.feed} feed · looping sample clip`);
   setText($("#feed-toggle"), feedPaused ? "Play feed" : "Pause feed");
-  empty.hidden = !note;
-  if (note) setText(empty, note);
-  feedVideo.hidden = !!note;
-  if (note) return feedVideo.pause();
+  driveFeed(feedVideo, $("#feed-empty"), c, true);
+}
 
-  feedVideo.setAttribute("aria-label", `${c.id} ${c.feed} camera feed, looping sample clip`);
-  if (feedVideo.getAttribute("src") !== src) feedVideo.src = src;    // CAM-001 and CAM-003 share a clip: no reload
-  if (!feedPaused && feedVideo.paused) feedVideo.play().catch(() => {});   // muted, so autoplay is allowed
+// Overview gallery: one tile per camera. Four 4K clips would be heavy to decode at once,
+// so a tile only plays while it is scrolled into view.
+const gallery = new Map();   // camera id -> { video, empty, pill }
+const onScreen = new Set();
+
+function buildGallery() {
+  const observer = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) onScreen.add(e.target.dataset.cam);
+      else onScreen.delete(e.target.dataset.cam);
+    }
+    if (store.view === "overview") syncGallery();
+  }, { threshold: 0.25 });
+
+  const items = [];
+  for (const [id, c] of store.cameras) {
+    const video = h("video", { class: "feed__video", loop: true, playsinline: true, preload: "metadata", disablepictureinpicture: true, hidden: true });
+    video.muted = true;   // the property (not the attribute) is what lets autoplay start
+    video.addEventListener("error", () => { video.dataset.failed = video.getAttribute("src"); syncGallery(); });
+    video.addEventListener("loadedmetadata", () => { if (video.paused) video.currentTime = 0.1; });   // paint a frame while paused
+    const empty = h("p", { class: "feed__empty", text: "Loading feed…" }), pill = h("span");
+    const frame = h("div", { class: "feed__frame", "data-cam": id },
+      video, h("p", { class: "feed__badge", text: `${id} · ${c.feed}` }), empty,
+      h("a", { class: "feed__open", href: `#/cameras/${id}`, tabindex: "-1", "aria-hidden": "true" }));
+    observer.observe(frame);
+    gallery.set(id, { video, empty, pill });
+    items.push(h("li", { class: "gallery__item" }, h("figure", { class: "feed" }, frame,
+      h("figcaption", {}, h("a", { class: "gallery__link", href: `#/cameras/${id}`, text: `${id} · open` }), pill))));
+  }
+  $("#camera-gallery").replaceChildren(...items);
+}
+
+function syncGallery() {
+  for (const [id, { video, empty, pill }] of gallery) {
+    const c = store.cameras.get(id);
+    setPill(pill, c.health);
+    driveFeed(video, empty, c, onScreen.has(id));
+  }
+  setText($("#gallery-toggle"), feedPaused ? "Play all feeds" : "Pause all feeds");
+}
+
+function pauseGallery() { for (const { video } of gallery.values()) video.pause(); }
+
+// One switch for every feed, so the camera page and the gallery agree.
+function setFeedPaused(paused) {
+  feedPaused = paused;
+  if (feedPaused) { feedVideo.pause(); pauseGallery(); }
+  const c = store.cameras.get(store.selectedCam);
+  if (store.view === "cameras" && c) syncFeed(c);
+  if (store.view === "overview") syncGallery();
+  announce(feedPaused ? "Feeds paused" : "Feeds playing");
 }
 
 function fieldError(input, errEl, msg) {
@@ -422,12 +466,8 @@ function fieldError(input, errEl, msg) {
 }
 
 function bindCameraControls() {
-  $("#feed-toggle").addEventListener("click", () => {
-    feedPaused = !feedPaused;
-    if (feedPaused) feedVideo.pause();
-    syncFeed(store.cameras.get(store.selectedCam));
-    announce(feedPaused ? "Feed paused" : "Feed playing");
-  });
+  $("#feed-toggle").addEventListener("click", () => setFeedPaused(!feedPaused));
+  $("#gallery-toggle").addEventListener("click", () => setFeedPaused(!feedPaused));
   feedVideo.addEventListener("error", () => {
     feedVideo.dataset.failed = feedVideo.getAttribute("src");
     syncFeed(store.cameras.get(store.selectedCam));

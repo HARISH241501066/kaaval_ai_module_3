@@ -33,7 +33,7 @@ ui/
 
 | Route | Purpose |
 |---|---|
-| `#/overview` | Key figures, alert history (one per state transition), camera tiles, latest events |
+| `#/overview` | Key figures, alert history (one per state transition), and a live-feed gallery of every camera |
 | `#/cameras/CAM-00x` | Identity, live fps/bitrate, camera feed, stream URIs, PTZ and encoder commands, fault injection |
 | `#/node` | Layered health check (node → runtime → inference → pipe), telemetry, failure controls, model deploy, watchlist |
 | `#/events` | Filterable live AI event feed and the dead-letter queue |
@@ -62,6 +62,7 @@ The simulator has no pixels of its own, so the Cameras page plays two recorded c
 - The clip loops, muted, and starts automatically. **Pause feed** stops it. It starts paused for visitors who prefer reduced motion, and it pauses when you leave the Cameras page.
 - If a camera goes offline or loses its credentials, its feed shows **No signal** and resumes when the camera recovers.
 - If a clip is missing, the slot explains where to put the file.
+- The Overview page shows all four cameras as a gallery. A tile plays only while it is scrolled into view, so four 4K clips are never decoded at once. Click a tile to open that camera. **Pause all feeds** stops every feed, here and on the camera page.
 - The server streams the files with HTTP Range requests, so the 4K clips play without loading fully into memory.
 
 ## Design system

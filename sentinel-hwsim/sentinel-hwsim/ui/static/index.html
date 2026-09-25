@@ -52,37 +52,24 @@
         <li class="panel kpi" id="kpi-alerts"><span class="kpi__label">Open alerts</span><span class="kpi__value"><span class="skeleton"></span></span><span class="kpi__note"></span></li>
       </ul>
 
-      <div class="grid grid--overview">
-        <section class="panel" aria-labelledby="h-alerts">
-          <div class="panel__header">
-            <h2 id="h-alerts">Alerts</h2>
-            <span class="panel__meta">One per state transition, per device</span>
-          </div>
-          <ol class="alert-list" id="alert-list" aria-label="Alert history, newest first" tabindex="0"></ol>
-          <p class="empty" id="alert-empty">No alerts yet. Break something from the Cameras or AI node pages.</p>
-        </section>
-
-        <section class="panel" aria-labelledby="h-tiles">
-          <div class="panel__header">
-            <h2 id="h-tiles">Cameras</h2>
-            <a class="panel__meta" href="#/cameras">Manage cameras</a>
-          </div>
-          <ul class="tiles" id="camera-tiles"></ul>
-        </section>
-      </div>
-
-      <section class="panel panel--flush" aria-labelledby="h-latest">
+      <section class="panel" aria-labelledby="h-alerts">
         <div class="panel__header">
-          <h2 id="h-latest">Latest AI events</h2>
-          <a class="panel__meta" href="#/events">All events</a>
+          <h2 id="h-alerts">Alerts</h2>
+          <span class="panel__meta">One per state transition, per device</span>
         </div>
-        <div class="table-wrap" role="region" aria-labelledby="h-latest" tabindex="0">
-          <table class="table">
-            <thead><tr><th scope="col">Device time</th><th scope="col">Camera</th><th scope="col">Type</th><th scope="col">Details</th><th scope="col" class="num">Conf.</th></tr></thead>
-            <tbody id="latest-events"></tbody>
-          </table>
+        <ol class="alert-list" id="alert-list" aria-label="Alert history, newest first" tabindex="0"></ol>
+        <p class="empty" id="alert-empty">No alerts yet. Break something from the Cameras or AI node pages.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-gallery">
+        <div class="panel__header">
+          <h2 id="h-gallery">Live camera feeds</h2>
+          <div class="cluster">
+            <span class="panel__meta">Looping sample clips · MAIN and SUB alternate by camera</span>
+            <button type="button" class="btn btn--sm" id="gallery-toggle">Pause all feeds</button>
+          </div>
         </div>
-        <p class="table-foot" id="latest-empty">Waiting for the first events…</p>
+        <ul class="gallery" id="camera-gallery" aria-label="Live feed from each camera"></ul>
       </section>
     </section>
 
