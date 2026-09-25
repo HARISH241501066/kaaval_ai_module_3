@@ -23,3 +23,14 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Secrets and local config: never commit
+.env
+.env.*
+!.env.example
+
+# Downloaded detector weights and generated relay config
+models/
+relay/generated/
+*.key
+*.pem
