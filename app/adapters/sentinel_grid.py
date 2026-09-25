@@ -71,12 +71,12 @@ class SentinelGridAdapter(BaseAdapter):
     def breaker(self) -> CircuitBreaker:
         return self._breaker
 
-    def _guard(self, fn: Callable[[], T]) -> T:
+    def _guard(self, fn: Callable[[], T], retries: int = RETRIES) -> T:
         """5 s timeouts live in the callees; here: breaker, retry x2 with backoff + jitter, error mapping."""
         if not self._breaker.allow():
             raise ConnectionFailed("the Sentinel Grid circuit breaker is open: too many recent failures, retrying shortly")
         last: DeviceError | None = None
-        for attempt in range(RETRIES + 1):
+        for attempt in range(retries + 1):
             try:
                 result = fn()
             except AuthFailed as e:                     # wrong credentials: retrying will not help
@@ -92,7 +92,7 @@ class SentinelGridAdapter(BaseAdapter):
             if isinstance(last, AuthFailed):
                 self._breaker.failure()
                 raise last
-            if attempt < RETRIES:
+            if attempt < retries:
                 self._sleep(min(30.0, 0.5 * 2 ** attempt) * random.uniform(0.8, 1.2))
         self._breaker.failure()
         assert last is not None
@@ -174,15 +174,15 @@ class SentinelGridAdapter(BaseAdapter):
             return self.grid.whep_source_url(cam_id)
         raise CapabilityNotSupported(f"{protocol} cannot be pulled server-side from the grid")
 
-    def probe(self, cam_id: str) -> ProbeResult:
+    def probe(self, cam_id: str, retries: int = RETRIES) -> ProbeResult:
         """ffprobe the camera over RTSP/TCP: codec, resolution, fps."""
         url = self.grid.rtsp_url(cam_id)
         red = self.redactor
-        return self._guard(lambda: probe_rtsp(url, red))
+        return self._guard(lambda: probe_rtsp(url, red), retries)
 
-    def probe_whep(self, cam_id: str) -> ProbeResult:
+    def probe_whep(self, cam_id: str, retries: int = RETRIES) -> ProbeResult:
         user, pw = self.grid.basic_auth()
-        return self._guard(lambda: probe_whep(self.grid.whep_url_public(cam_id), user, pw))
+        return self._guard(lambda: probe_whep(self.grid.whep_url_public(cam_id), user, pw), retries)
 
     # ---------------------------------------------- C7: connection test
     def connection_test(self, sample_camera: Optional[str] = None) -> dict[str, Any]:

@@ -31,6 +31,9 @@ Thumbs.db
 
 # Downloaded detector weights and generated relay config
 models/
+relay/bin/
 relay/generated/
 *.key
 *.pem
+*.crt
+files/__pycache__/

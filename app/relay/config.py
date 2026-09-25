@@ -111,6 +111,7 @@ def render(settings: Settings, paths: Mapping[str, Mapping[str, Any]]) -> str:
         "logLevel": "info", "logDestinations": ["stdout"],
         "api": True, "apiAddress": api_host, "metrics": True, "metricsAddress": "127.0.0.1:9998",
         "pprof": False, "playback": False, "rtmp": False, "srt": False, "moq": False,
+        "writeQueueSize": settings.relay_write_queue_size,
         "rtsp": True, "rtspAddress": f":{settings.relay_rtsp_port}", "rtspTransports": ["tcp"],
         "hls": True, "hlsAddress": f":{settings.relay_hls_port}", "hlsAlwaysRemux": False, "hlsAllowOrigins": origins,
         "webrtc": True, "webrtcAddress": f":{settings.relay_webrtc_port}", "webrtcAllowOrigins": origins,

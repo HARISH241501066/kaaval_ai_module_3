@@ -61,8 +61,13 @@ def install_log_redaction(redactor: Redactor) -> None:
 
     def factory(*args, **kwargs):
         record = _original_factory(*args, **kwargs)
-        record.msg = redactor.scrub(record.getMessage())
-        record.args = None
+        try:
+            message = record.getMessage()
+        except Exception:                             # a malformed log call must not become our failure
+            message = str(record.msg)
+        scrubbed = redactor.scrub(message)
+        if scrubbed != message:                       # only rewrite records that held a secret: formatters such as
+            record.msg, record.args = scrubbed, None  # uvicorn's access log rely on the original args being intact
         if record.exc_info and record.exc_info[0] is not None:
             record.exc_text = redactor.scrub("".join(traceback.format_exception(*record.exc_info)).rstrip("\n"))
         return record

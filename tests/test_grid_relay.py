@@ -287,8 +287,9 @@ def test_generated_config_location_is_git_ignored():
 class RelayFake:
     """MediaMTX API stand-in: records path replacements, says whether a path is ready."""
 
-    def __init__(self, ready=()):
+    def __init__(self, ready=(), source_types=None):
         self.ready, self.puts, self.requests = set(ready), [], []
+        self.source_types = source_types or {}
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.requests.append((request.method, request.url.path))
@@ -297,25 +298,40 @@ class RelayFake:
             return httpx.Response(200, json={"items": []})
         if p.startswith("/v3/paths/get/"):
             name = p.removeprefix("/v3/paths/get/")
-            return httpx.Response(200, json={"name": name, "ready": name in self.ready})
+            return httpx.Response(200, json={"name": name, "ready": name in self.ready,
+                                             "source": {"type": self.source_types.get(name, "rtspSource")}})
         if p.startswith("/v3/config/paths/replace/"):
             self.puts.append((p.removeprefix("/v3/config/paths/replace/"), json.loads(request.content)))
             return httpx.Response(200)
         return httpx.Response(404)
 
 
-def make_manager(relay: RelayFake, probe_results):
-    s = make_settings()
-    mgr = RelayManager(s, SentinelGridAdapter(s), http=httpx.Client(base_url="http://relay-api", transport=httpx.MockTransport(relay)))
-    calls = []
+class ScriptedAdapter(SentinelGridAdapter):
+    """Grid probes answer from a script: {"RTSP": [results...], "WHEP": [...]}. Records every call."""
 
-    def fake_probe(url, redactor, **kw):
-        calls.append(url)
-        r = probe_results.pop(0)
+    def __init__(self, script):
+        super().__init__(make_settings())
+        self.script, self.calls = script, []
+
+    def _next(self, protocol, cam_id, retries):
+        self.calls.append((protocol, cam_id, retries))
+        r = self.script[protocol].pop(0)
         if isinstance(r, Exception):
             raise r
         return r
-    return mgr, calls, fake_probe
+
+    def probe(self, cam_id, retries=2):
+        return self._next("RTSP", cam_id, retries)
+
+    def probe_whep(self, cam_id, retries=2):
+        return self._next("WHEP", cam_id, retries)
+
+
+def make_manager(relay: RelayFake, script):
+    s = make_settings()
+    adapter = ScriptedAdapter(script)
+    mgr = RelayManager(s, adapter, http=httpx.Client(base_url="http://relay-api", transport=httpx.MockTransport(relay)))
+    return mgr, adapter.calls
 
 
 def seed_camera(codec="h264"):
@@ -331,77 +347,96 @@ def main_source_of(relay: RelayFake, idx=-1):
     return puts[idx]["source"]
 
 
-def test_rtsp_is_tried_first_and_recorded_as_active(monkeypatch):
+OK = ProbeResult("h264", 1920, 1080, 25.0)
+NO_PROBE_OF_RELAY = "the relay path must not be opened by ensure(): the grid's buffered GOP is for the viewer"
+
+
+def test_rtsp_is_tried_first_and_recorded_as_active():
     seed_camera()
     relay = RelayFake()
-    mgr, calls, fake = make_manager(relay, [ProbeResult("h264", 1920, 1080, 25.0)])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, calls = make_manager(relay, {"RTSP": [OK], "WHEP": []})
     with SessionLocal() as db:
         st = mgr.ensure(db, "cam04")
     assert st["active_source"] == "RTSP" and main_source_of(relay).startswith("rtsp://")
-    assert calls == ["rtsp://127.0.0.1:8654/cam/cam04/main"]        # the relay was asked, not the grid
+    assert calls == [("RTSP", "cam04", 0)]                          # asked of the grid, no retries: failover must be quick
 
 
-def test_blocked_rtsp_fails_over_to_whep_and_the_status_says_so(monkeypatch):
+def test_ensure_never_opens_the_relay_path_itself():
+    """A probe on the relay would take the grid's replayed keyframe; cameras with sparse keyframes would then leave the viewer waiting."""
     seed_camera()
     relay = RelayFake()
-    mgr, calls, fake = make_manager(relay, [ConnectionFailed("probe failed (Connection refused)"), ProbeResult("h264", 1920, 1080, 25.0)])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, _ = make_manager(relay, {"RTSP": [OK], "WHEP": []})
+    with SessionLocal() as db:
+        mgr.ensure(db, "cam04")
+    assert {p for _, p in relay.requests} <= {"/v3/paths/get/cam/cam04/main", "/v3/paths/list", "/v3/config/paths/replace/cam/cam04/main",
+                                              "/v3/config/paths/replace/cam/cam04/web"}, NO_PROBE_OF_RELAY
+
+
+def test_blocked_rtsp_fails_over_to_whep_and_the_status_says_so():
+    seed_camera()
+    relay = RelayFake()
+    mgr, calls = make_manager(relay, {"RTSP": [ConnectionFailed("probe failed (Connection refused)")], "WHEP": [ProbeResult(None, None, None, None)]})
     with SessionLocal() as db:
         st = mgr.ensure(db, "cam04")
         rows = {r.protocol: r for r in db.query(StreamSourceModel).all()}
     assert st["active_source"] == "WHEP"
+    assert [c[0] for c in calls] == ["RTSP", "WHEP"]
     assert main_source_of(relay).startswith("whep://")
     assert rows["RTSP"].available is False and "CONNECTION_FAILED" in rows["RTSP"].detail
     assert rows["WHEP"].active is True
     assert rows["HLS"].available is False and "not usable server-side" in rows["HLS"].detail   # explicit, never a silent 401
 
 
-def test_camera_returns_to_rtsp_when_rtsp_recovers(monkeypatch):
+def test_camera_returns_to_rtsp_when_rtsp_recovers():
     seed_camera()
     relay = RelayFake()
-    mgr, _, fake = make_manager(relay, [ConnectionFailed("down"), ProbeResult("h264", 1, 1, 1.0),
-                                        ProbeResult("h264", 1, 1, 1.0)])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, _ = make_manager(relay, {"RTSP": [ConnectionFailed("down"), OK], "WHEP": [ProbeResult(None, None, None, None)]})
     with SessionLocal() as db:
         assert mgr.ensure(db, "cam04")["active_source"] == "WHEP"
         assert mgr.ensure(db, "cam04")["active_source"] == "RTSP"   # RTSP is always tried first again
 
 
-def test_a_camera_that_is_already_flowing_is_not_touched(monkeypatch):
+def test_a_camera_that_is_already_flowing_is_not_touched():
     seed_camera()
     relay = RelayFake(ready={"cam/cam04/main"})
-    mgr, calls, fake = make_manager(relay, [])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, calls = make_manager(relay, {})
     with SessionLocal() as db:
         mgr.ensure(db, "cam04")
     assert calls == [] and relay.puts == []                         # no probe, no reconfiguration: no extra grid connection
 
 
-def test_all_protocols_failing_reports_unavailable_without_raising(monkeypatch):
+def test_a_flowing_camera_reports_the_protocol_the_relay_is_really_using():
+    seed_camera()
+    relay = RelayFake(ready={"cam/cam04/main"}, source_types={"cam/cam04/main": "webRTCSource"})
+    mgr, calls = make_manager(relay, {})
+    with SessionLocal() as db:
+        st = mgr.ensure(db, "cam04")
+    assert st["active_source"] == "WHEP"                            # learned from MediaMTX, not guessed
+    assert calls == [] and relay.puts == []
+
+
+def test_all_protocols_failing_reports_unavailable_without_raising():
     seed_camera()
     relay = RelayFake()
-    mgr, _, fake = make_manager(relay, [DeviceTimeout("probe timed out"), DeviceTimeout("probe timed out")])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, _ = make_manager(relay, {"RTSP": [DeviceTimeout("probe timed out")], "WHEP": [DeviceTimeout("WHEP endpoint timed out")]})
     with SessionLocal() as db:
         st = mgr.ensure(db, "cam04")
     assert st["active_source"] is None and not any(s["available"] for s in st["sources"])
 
 
-def test_real_codec_from_the_stream_replaces_the_catalogue_guess(monkeypatch):
+def test_real_codec_from_the_probe_replaces_the_catalogue_guess():
     seed_camera("h264")
     relay = RelayFake()
-    mgr, _, fake = make_manager(relay, [ProbeResult("h265", 2560, 1440, 25.0)])
-    monkeypatch.setattr("app.relay.manager.probe_rtsp", fake)
+    mgr, _ = make_manager(relay, {"RTSP": [ProbeResult("h265", 2560, 1440, 25.0)], "WHEP": []})
     with SessionLocal() as db:
         mgr.ensure(db, "cam04")
         assert db.query(CameraMappingModel).one().codec == "h265"
     web = [c for n, c in relay.puts if n == "cam/cam04/web"][-1]
-    assert "libx264" in web["runOnDemand"]                          # the web path was rebuilt as a transcode
+    assert "libx264" in web["runOnDemand"]                          # the web path was built as a transcode
 
 
 def test_unknown_camera_is_a_mapping_error():
-    mgr, _, _ = make_manager(RelayFake(), [])
+    mgr, _ = make_manager(RelayFake(), {})
     with SessionLocal() as db, pytest.raises(MappingError):
         mgr.ensure(db, "cam99")
 

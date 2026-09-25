@@ -21,8 +21,11 @@ import gzip
 import ipaddress
 import json
 import logging
+import os
 import re
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -46,9 +49,25 @@ from sentinel_hwsim.faults import Fault
 log = logging.getLogger("sentinel_console")
 STATIC = Path(__file__).parent / "static"
 STATIC_TYPES = {"index.html": "text/html; charset=utf-8", "styles.css": "text/css; charset=utf-8",
-                "app.js": "text/javascript; charset=utf-8", "favicon.svg": "image/svg+xml"}
-CSP = ("default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; "
-       "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+                "app.js": "text/javascript; charset=utf-8", "wall.js": "text/javascript; charset=utf-8", "favicon.svg": "image/svg+xml"}
+
+
+def build_csp(relay_origins: list[str]) -> str:
+    """Strict CSP. The only origins beyond our own are the stream relay's (WebRTC signalling and HLS), never the camera grid."""
+    relay = " ".join(relay_origins)
+    return (f"default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; "
+            f"connect-src 'self' {relay}; media-src 'self' blob: {relay}; base-uri 'none'; form-action 'none'; "
+            "frame-ancestors 'none'")
+
+
+def default_relay_origins() -> list[str]:
+    host = os.getenv("RELAY_PUBLIC_HOST", "localhost")
+    return [f"http://{host}:{os.getenv('RELAY_WEBRTC_PORT', '8889')}", f"http://{host}:{os.getenv('RELAY_HLS_PORT', '8888')}"]
+
+
+# Video source. `real` (the default) shows the live Sentinel Camera Grid through Module 3's relay; `mock` plays the
+# recorded sample clips instead, fully offline. The simulated devices (health, AI node) are simulated in both modes.
+VIDEO_MODES = ("real", "mock")
 
 # Recorded clips that stand in for the cameras' video (the simulator has no pixels of its own).
 FEED_FILES = {"MAIN": "camera_main.mp4", "SUB": "camera_sub.mp4"}
@@ -110,8 +129,10 @@ async def classify_node(node: AINodeDriver, last_heartbeat_at, now, connected_fo
 
 
 class Fleet:
-    def __init__(self, *, speed: float, seed: int, feed_dir: Path | None = None):
-        self.speed, self.seed = speed, seed
+    def __init__(self, *, speed: float, seed: int, feed_dir: Path | None = None, video_mode: str = "real"):
+        self.speed, self.seed, self.video_mode = speed, seed, video_mode
+        if video_mode == "real":
+            feed_dir = None                      # no looping sample video anywhere in real mode
         self.sim = Simulator(speed=speed, seed=seed)
         self.drivers = {d["device_id"]: create_driver(d, simulator=self.sim) for d in FLEET}
         self.cameras = [d["device_id"] for d in FLEET if d["kind"] == "camera"]
@@ -146,7 +167,7 @@ class Fleet:
 
     def snapshot(self) -> dict[str, Any]:
         return {"meta": {"speed": self.speed, "seed": self.seed, "started_at": self.started_at,
-                         "heartbeat_s": HEARTBEAT_S, "feeds": self.feeds},
+                         "heartbeat_s": HEARTBEAT_S, "feeds": self.feeds, "video_mode": self.video_mode},
                 "cameras": [self.cam[c] for c in self.cameras], "node": self.node,
                 "events": list(self.events)[-50:], "alerts": list(self.alerts), "dlq": list(self.dlq)}
 
@@ -348,8 +369,13 @@ class Fleet:
 # Minimal HTTP/1.1 server (one request per connection; SSE keeps it open)
 # --------------------------------------------------------------------------- #
 class Server:
-    def __init__(self, fleet: Fleet, host: str, port: int, feed_dir: Path | None = None):
-        self.fleet, self.host, self.port, self.feed_dir = fleet, host, port, feed_dir
+    def __init__(self, fleet: Fleet, host: str, port: int, feed_dir: Path | None = None, *,
+                 m3_url: str = "http://127.0.0.1:8000", relay_origins: list[str] | None = None):
+        self.fleet, self.host, self.port = fleet, host, port
+        self.feed_dir = None if fleet.video_mode == "real" else feed_dir
+        self.m3_url = m3_url.rstrip("/")
+        self.relay_origins = relay_origins if relay_origins is not None else default_relay_origins()
+        self.csp = build_csp(self.relay_origins)
         self.loopback = ipaddress.ip_address(host).is_loopback if host != "localhost" else True
         self.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
         self._gz: dict[str, bytes] = {}
@@ -428,7 +454,7 @@ class Server:
         body = (STATIC / name).read_bytes()
         extra = {"Cache-Control": "no-cache"}
         if name == "index.html":
-            extra["Content-Security-Policy"] = CSP
+            extra["Content-Security-Policy"] = self.csp
         if "gzip" in headers.get("accept-encoding", "") and len(body) > 1024:
             body = gzip.compress(body, 6)
             extra |= {"Content-Encoding": "gzip", "Vary": "Accept-Encoding"}
@@ -445,6 +471,11 @@ class Server:
                 return await self.feed(writer, headers, m.group(1).upper())
             if path == "/api/state":
                 return await self.json(writer, 200, self.fleet.snapshot())
+            if path == "/api/wall/cameras":
+                return await self.wall(writer, "/api/v1/grid/cameras")
+            if m := re.fullmatch(r"/api/wall/cameras/([A-Za-z0-9_-]{1,64})/stream-sources", path):
+                profile = "main" if re.search(r"(?:^|&)profile=main(?:&|$)", query) else "web"
+                return await self.wall(writer, f"/federation/cameras/{m.group(1)}/stream-sources?profile={profile}", timeout=45)
             if path == "/api/stream":
                 return await self.sse(writer)
             if path == "/api/trace":
@@ -469,6 +500,36 @@ class Server:
                 return await self.json(writer, 400, {"error": "BAD_REQUEST", "message": str(e)})
             return await self.json(writer, 200, result)
         await self.json(writer, 404, {"error": "NOT_FOUND", "message": f"{method} {path}"})
+
+    async def wall(self, writer, upstream: str, timeout: float = 10) -> None:
+        """
+        The camera wall's data comes from Module 3, never from the grid: the browser asks this console, the console
+        asks M3 (fixed paths only, so this is not an open proxy) and passes the credential-free answer through.
+        """
+        if self.fleet.video_mode != "real":
+            return await self.json(writer, 404, {"error": "NOT_FOUND", "message": "the live wall is off in mock video mode"})
+
+        def fetch() -> tuple[int, bytes]:
+            try:
+                with urllib.request.urlopen(f"{self.m3_url}{upstream}", timeout=timeout) as r:
+                    return r.status, r.read(2_000_000)
+            except urllib.error.HTTPError as e:
+                return e.code, e.read(200_000)
+
+        try:
+            status, body = await asyncio.to_thread(fetch)
+        except (urllib.error.URLError, TimeoutError, OSError):
+            return await self.json(writer, 502, {"error": "M3_UNREACHABLE", "message":
+                                                 f"Module 3 is not reachable at {self.m3_url}. Start it: uvicorn app.main:app --port 8000"})
+        if status >= 400:
+            try:
+                detail = json.loads(body).get("detail", {})
+                msg = detail.get("message") if isinstance(detail, dict) else str(detail)
+            except ValueError:
+                msg = None
+            return await self.json(writer, 502 if status >= 500 else status,
+                                   {"error": "M3_ERROR", "message": msg or f"Module 3 answered HTTP {status}"})
+        await self.send(writer, 200, body, "application/json")
 
     async def snapshot(self, writer, device: str) -> None:
         d = self.fleet.drivers.get(device)
@@ -510,14 +571,24 @@ async def main() -> None:
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--feed-dir", type=Path, default=find_feed_dir(),
                     help="folder with camera_main.mp4 and camera_sub.mp4 (default: nearest camera_feed/ above this file)")
+    env_mode = os.getenv("M3_DRIVER_MODE", "real")
+    ap.add_argument("--video-mode", choices=VIDEO_MODES, default=env_mode if env_mode in VIDEO_MODES else "real",
+                    help="real (default): live grid cameras via Module 3's relay. mock: looping sample clips, offline. Env: M3_DRIVER_MODE")
+    ap.add_argument("--m3-url", default=os.getenv("M3_API_URL", "http://127.0.0.1:8000"),
+                    help="Module 3 API (camera inventory and stream broker)")
+    ap.add_argument("--relay-origin", action="append", default=None, metavar="URL",
+                    help="origin of the stream relay the browser may connect to (repeatable; default from RELAY_PUBLIC_HOST/RELAY_*_PORT)")
     ap.add_argument("--open", action="store_true", help="open the console in the default browser")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
     logging.getLogger("sentinel_hwsim").setLevel(logging.WARNING)  # wire faults only; the UI shows the full trace
 
-    fleet = Fleet(speed=args.speed, seed=args.seed, feed_dir=args.feed_dir)
-    server = Server(fleet, args.host, args.port, args.feed_dir)
-    if fleet.feeds:
+    fleet = Fleet(speed=args.speed, seed=args.seed, feed_dir=args.feed_dir, video_mode=args.video_mode)
+    server = Server(fleet, args.host, args.port, args.feed_dir, m3_url=args.m3_url, relay_origins=args.relay_origin)
+    if args.video_mode == "real":
+        log.info("video: LIVE grid cameras through Module 3 (%s) and the relay (%s); no sample clips are served",
+                 args.m3_url, ", ".join(server.relay_origins))
+    elif fleet.feeds:
         log.info("camera feeds: %s from %s", ", ".join(f"{p} ({FEED_FILES[p]})" for p in fleet.feeds), args.feed_dir)
     else:
         log.warning("no camera feed clips found (%s); the Cameras page will show a placeholder", args.feed_dir)

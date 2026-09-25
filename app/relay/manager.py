@@ -26,9 +26,7 @@ from sqlalchemy.orm import Session
 from app.adapters.sentinel_grid import SentinelGridAdapter
 from app.core.config import Settings, get_settings
 from app.grid import urls
-from app.grid.probe import probe_rtsp
 from app.live.m3 import SYSTEM_ID
-from app.live.redact import Redactor
 from app.models.grid import CameraMappingModel, StreamSourceModel
 from app.relay import config as cfg
 from contract import ConnectionFailed, DeviceError, MappingError
@@ -76,12 +74,20 @@ class RelayManager:
         except httpx.HTTPError:
             return False
 
-    def path_ready(self, name: str) -> bool:
+    def path_info(self, name: str) -> dict[str, Any] | None:
         try:
             r = self._client().get(f"/v3/paths/get/{name}")
         except httpx.HTTPError:
-            return False
-        return r.status_code == 200 and bool(r.json().get("ready"))
+            return None
+        return r.json() if r.status_code == 200 else None
+
+    def path_ready(self, name: str) -> bool:
+        return bool((self.path_info(name) or {}).get("ready"))
+
+    @staticmethod
+    def protocol_of(info: dict[str, Any]) -> str | None:
+        """MediaMTX's own name for what feeds a path -> our protocol name."""
+        return {"rtspSource": "RTSP", "rtspsSource": "RTSP", "webRTCSource": "WHEP", "hlsSource": "HLS"}.get((info.get("source") or {}).get("type"))
 
     def _put_path(self, name: str, conf: dict[str, Any]) -> None:
         """Create or replace one path on the running relay."""
@@ -140,7 +146,11 @@ class RelayManager:
         """
         mapping = self._mapping(db, cam_id)
         with self._lock(cam_id):
-            if self.path_ready(cfg.path_name(cam_id, cfg.MAIN)):
+            info = self.path_info(cfg.path_name(cam_id, cfg.MAIN))
+            if info and info.get("ready"):                       # already flowing: leave it alone, but learn what feeds it
+                if (proto := self.protocol_of(info)) and self.status(db, cam_id)["active_source"] != proto:
+                    self._record(db, cam_id, proto, PULLABLE.index(proto) + 1 if proto in PULLABLE else 3, True, None, active=True)
+                    self._record_hls(db, cam_id)
                 return self.status(db, cam_id)
             if not self.api_up():
                 return {**self.status(db, cam_id), "state": "RELAY_DOWN"}
@@ -161,25 +171,26 @@ class RelayManager:
             return self.status(db, cam_id)
 
     def _try(self, db: Session, mapping: CameraMappingModel, protocol: str) -> tuple[bool, str | None]:
+        """
+        Is this protocol usable right now? Asked of the GRID directly, with no retries (failover must be quick). The
+        relay's own path is deliberately NOT opened here: the grid replays its buffered GOP to whoever connects first,
+        and that first frame must go to the viewer, not to a probe. Cameras with sparse keyframes (some send one every
+        20+ s) would otherwise leave the viewer waiting for the next natural keyframe.
+        """
         cam_id = mapping.external_id
         try:
-            plan = cfg.CameraPlan(cam_id, mapping.codec, protocol)
+            res = self.adapter.probe(cam_id, retries=0) if protocol == "RTSP" else self.adapter.probe_whep(cam_id, retries=0)
+            plan = cfg.CameraPlan(cam_id, res.codec or mapping.codec, protocol)
             ffmpeg = cfg.find_ffmpeg(self.s)
             for name, conf in cfg.path_settings(plan, self.s, self.adapter.source_url(protocol, cam_id), ffmpeg).items():
                 self._put_path(name, conf)
-            res = probe_rtsp(cfg.local_rtsp(self.s, cfg.path_name(cam_id, cfg.MAIN)), Redactor(),
-                             connect_timeout_s=self.s.relay_probe_timeout_s,
-                             hard_timeout_s=self.s.relay_probe_timeout_s + 8)
         except DeviceError as e:
             log.info("%s: %s did not work (%s)", cam_id, protocol, e.code.value)
             return False, f"{e.code.value}: {e}"[:200]
         if res.codec and res.codec != mapping.codec:              # the real stream is the authority on the codec
             mapping.codec, mapping.width, mapping.height, mapping.fps = res.codec, res.width, res.height, res.fps
             db.commit()
-            self._put_path(cfg.path_name(cam_id, cfg.WEB), cfg.path_settings(
-                cfg.CameraPlan(cam_id, res.codec, protocol), self.s, self.adapter.source_url(protocol, cam_id),
-                cfg.find_ffmpeg(self.s))[cfg.path_name(cam_id, cfg.WEB)])
-        log.info("%s: playing over %s", cam_id, protocol)
+        log.info("%s: %s works; the relay will pull over it when the first viewer joins", cam_id, protocol)
         return True, None
 
     # ---------------------------------------------------------------- records

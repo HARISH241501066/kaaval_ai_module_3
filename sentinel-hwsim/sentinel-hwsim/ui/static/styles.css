@@ -412,3 +412,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .pill, .btn, .panel, .layer__icon { border: 1px solid CanvasText; }
   .meter__fill { background: Highlight; }
 }
+
+/* live camera wall (real video mode): a paginated grid of live tiles, plus a full-size dialog */
+.wall { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5) var(--s4); list-style: none; margin: 0; padding: 0; }
+@media (min-width: 40em) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 64em) { .wall { grid-template-columns: repeat(3, minmax(0, 1fr)); } .wall[data-size="16"] { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.wall__tile { min-width: 0; }
+.wall__open { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: pointer; padding: 0; }
+.wall__open:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.wall__cap { align-items: center; }
+.wall__name { font-weight: 600; color: var(--ink); font-size: var(--fs-small); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wall__chips { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); font-size: var(--fs-caption); color: var(--ink-2); }
+.wall__chip { padding: 0 var(--s2); border: 1px solid var(--line-strong); border-radius: 999px; font-variant-numeric: tabular-nums; }
+.wall__nav { display: flex; align-items: center; justify-content: center; gap: var(--s4); margin-top: var(--s5); color: var(--ink-2); font-size: var(--fs-small); flex-wrap: wrap; }
+
+.wall-dialog { width: min(72rem, 94vw); max-height: 94vh; padding: var(--s4); border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); }
+.wall-dialog::backdrop { background: rgb(0 0 0 / 0.7); }
+.wall-dialog__head { display: flex; justify-content: space-between; gap: var(--s4); align-items: start; margin-bottom: var(--s3); }
+.wall-dialog__head h2 { margin: 0; font-size: var(--fs-h3); }
+.wall-dialog__frame { max-height: 78vh; }
+.wall-dialog__status { margin: var(--s3) 0 0; color: var(--ink-2); font-size: var(--fs-small); }

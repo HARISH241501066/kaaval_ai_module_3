@@ -2,6 +2,8 @@
 // Live data arrives over Server-Sent Events (/api/stream); commands are JSON POSTs.
 // All device data is rendered with textContent, never innerHTML (payloads can be hostile).
 
+import { createWall, LivePlayer } from "./wall.js";
+
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -141,8 +143,9 @@ function route() {
   }
   route.started = true;
   if (view === "events") renderEventTable();
-  if (view !== "cameras") feedVideo.pause();
+  if (view !== "cameras") { feedVideo.pause(); pagePlayer?.stop(); }
   if (view !== "overview") pauseGallery();
+  wall?.setActive(view === "overview");
   trace.toggle(view === "trace");
   renderAll();
 }
@@ -186,7 +189,7 @@ function hydrate(s) {
   if (!store.ready) {
     store.ready = true;
     buildCameraLists();
-    buildGallery();
+    setupVideo(s.meta.video_mode);
     selectCamera(store.selectedCam ?? s.cameras[0]?.id);
     $("#main").removeAttribute("aria-busy");
     route();
@@ -254,12 +257,29 @@ function renderAlerts() {
   }));
 }
 
+// Simulated devices stand in for real cameras: the n-th simulated camera is the n-th grid camera in Module 3's inventory.
+// In real video mode an event's camera therefore opens a live tile.
+function simToGrid(simId) {
+  if (!wall) return null;
+  const i = [...store.cameras.keys()].indexOf(simId);
+  return i >= 0 ? wall.cameras[i] ?? null : null;
+}
+
+function cameraCell(simId) {
+  const cam = simToGrid(simId);
+  if (!cam) return simId;
+  const btn = h("button", { type: "button", class: "btn btn--sm btn--ghost", "aria-label": `Open live view of ${cam.id}, mapped from ${simId}`, text: `${simId} → ${cam.id}` });
+  btn.addEventListener("click", () => wall.open(cam.id, btn));
+  return btn;
+}
+
 function eventRow(ev, { model = false, fresh = false } = {}) {
   const hit = ev.event_type === "WATCHLIST_HIT";
   return h("tr", { class: [fresh && "row--new", hit && "row--hit"].filter(Boolean).join(" ") || null },
     h("td", { class: "nowrap", text: fmtTime(ev.occurred_at) }),
-    h("td", { class: "nowrap", text: ev.camera_external_id }),
-    h("td", { class: "nowrap" }, hit ? h("span", { class: "pill pill--crit", text: "WATCHLIST HIT" }) : ev.event_type),
+    h("td", { class: "nowrap" }, cameraCell(ev.camera_external_id)),
+    h("td", { class: "nowrap" }, hit ? h("span", { class: "pill pill--crit", text: "WATCHLIST HIT" }) : ev.event_type, " ",
+      h("span", { class: "pill pill--muted", title: "Produced by the hardware simulator, not by the live cameras", text: "SIMULATED" })),
     h("td", {}, eventDetails(ev)),
     h("td", { class: "num", text: `${Math.round(ev.confidence * 100)}%` }),
     model ? h("td", { class: "mono nowrap", text: ev.model_version }) : null);
@@ -399,7 +419,35 @@ function driveFeed(video, empty, c, active) {
   else if (!video.paused) video.pause();
 }
 
+let wall = null, pagePlayer = null;
+
+// real mode: the live wall (from Module 3 and our relay); mock mode: the looping sample clips, offline.
+function setupVideo(mode) {
+  const real = mode === "real";
+  $("#wall-panel").hidden = !real;
+  $("#gallery-panel").hidden = real;
+  if (!real) return buildGallery();
+  wall = createWall({ announce });
+  pagePlayer = new LivePlayer(feedVideo, (p) => {
+    feedVideo.hidden = p.state !== "playing";
+    const empty = $("#feed-empty");
+    empty.hidden = p.state === "playing";
+    setText(empty, p.state === "offline" ? p.note : p.state === "connecting" ? (p.note || "Connecting…") : "");
+  });
+  wall.load().then(() => { if (store.view === "cameras") renderCameraDetail(); });
+}
+
+function syncLive(c) {
+  const cam = simToGrid(c.id);
+  setText($("#feed-badge"), cam ? `${cam.id} · live` : c.id);
+  setText($("#feed-caption"), cam ? `Live grid camera ${cam.id} (${cam.name}), shown for simulated ${c.id}` : "Waiting for Module 3's camera inventory");
+  $("#feed-toggle").hidden = true;
+  if (cam && store.view === "cameras") pagePlayer.start(cam.id);
+  else pagePlayer.stop();
+}
+
 function syncFeed(c) {
+  if (pagePlayer) return syncLive(c);
   setText($("#feed-badge"), `${c.id} · ${c.feed}`);
   setText($("#feed-caption"), `${c.feed} feed · looping sample clip`);
   setText($("#feed-toggle"), feedPaused ? "Play feed" : "Pause feed");
@@ -469,10 +517,11 @@ function bindCameraControls() {
   $("#feed-toggle").addEventListener("click", () => setFeedPaused(!feedPaused));
   $("#gallery-toggle").addEventListener("click", () => setFeedPaused(!feedPaused));
   feedVideo.addEventListener("error", () => {
+    if (pagePlayer) return;                       // the live player reports and retries its own failures
     feedVideo.dataset.failed = feedVideo.getAttribute("src");
     syncFeed(store.cameras.get(store.selectedCam));
   });
-  feedVideo.addEventListener("loadedmetadata", () => { if (feedVideo.paused) feedVideo.currentTime = 0.1; });   // paint a frame while paused
+  feedVideo.addEventListener("loadedmetadata", () => { if (!pagePlayer && feedVideo.paused) feedVideo.currentTime = 0.1; });   // (a live stream must never be seeked)   // paint a frame while paused
 
   for (const k of ["pan", "tilt", "zoom"]) {
     $(`#ptz-${k}`).addEventListener("input", (e) => { e.target.nextElementSibling.textContent = Number(e.target.value).toFixed(2); });

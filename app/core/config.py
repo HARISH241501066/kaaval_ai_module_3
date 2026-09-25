@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     relay_allow_origins: str = "http://127.0.0.1:8765,http://localhost:8765"   # who may call the relay from a browser
     relay_idle_close_s: int = 60      # upstream is closed this long after the last viewer leaves
     relay_probe_timeout_s: int = 12   # how long a source gets to start before we try the next protocol
+    # Some grid cameras send a keyframe only every 20+ s, and the grid replays that whole GOP as a burst when a client connects.
+    # MediaMTX drops packets beyond this queue (default 512), which corrupts the picture: keep it above the largest burst.
+    relay_write_queue_size: int = 8192
     ffmpeg_path: str = ""             # empty = look on PATH
 
     # --- live detection worker (python -m app.live.worker) ---

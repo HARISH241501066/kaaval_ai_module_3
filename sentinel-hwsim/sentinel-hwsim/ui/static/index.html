@@ -61,7 +61,27 @@
         <p class="empty" id="alert-empty">No alerts yet. Break something from the Cameras or AI node pages.</p>
       </section>
 
-      <section class="panel" aria-labelledby="h-gallery">
+      <!-- Real video mode: the live wall. Inventory from Module 3, pictures from our relay. -->
+      <section class="panel" id="wall-panel" aria-labelledby="h-wall" hidden>
+        <div class="panel__header">
+          <h2 id="h-wall">Live camera wall</h2>
+          <div class="cluster">
+            <span class="panel__meta" id="wall-meta"></span>
+            <label class="field__label" for="wall-size">Cameras per page</label>
+            <select class="select" id="wall-size"><option value="9" selected>9</option><option value="16">16</option></select>
+          </div>
+        </div>
+        <ul class="wall" id="wall-grid" aria-label="Live cameras"></ul>
+        <p class="empty" id="wall-empty" hidden>Loading the camera inventory…</p>
+        <nav class="wall__nav" aria-label="Camera wall pages">
+          <button type="button" class="btn btn--sm" id="wall-prev">Previous</button>
+          <span id="wall-page" aria-live="polite"></span>
+          <button type="button" class="btn btn--sm" id="wall-next">Next</button>
+        </nav>
+      </section>
+
+      <!-- Mock video mode (M3_DRIVER_MODE=mock): looping sample clips, works offline. -->
+      <section class="panel" id="gallery-panel" aria-labelledby="h-gallery" hidden>
         <div class="panel__header">
           <h2 id="h-gallery">Live camera feeds</h2>
           <div class="cluster">
@@ -339,6 +359,20 @@
       </section>
     </section>
   </main>
+
+  <dialog class="wall-dialog" id="wall-dialog" aria-labelledby="wall-dialog-title">
+    <header class="wall-dialog__head">
+      <div class="stack">
+        <h2 id="wall-dialog-title">—</h2>
+        <p class="detail__sub" id="wall-dialog-meta"></p>
+      </div>
+      <button type="button" class="btn btn--sm" id="wall-close">Close</button>
+    </header>
+    <div class="feed__frame wall-dialog__frame">
+      <video class="feed__video" id="wall-dialog-video" playsinline autoplay muted controls disablepictureinpicture hidden aria-label="Live camera, full size"></video>
+    </div>
+    <p class="wall-dialog__status" id="wall-dialog-status" aria-live="polite"></p>
+  </dialog>
 
   <footer class="footer">
     <div class="container footer__inner">

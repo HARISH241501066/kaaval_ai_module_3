@@ -12,8 +12,6 @@ import threading
 
 from app.core.config import Settings
 from app.db.database import SessionLocal
-from app.live.m3 import SYSTEM_ID
-from app.models.system import SystemModel
 from app.relay.manager import RelayManager
 from app.services import grid_sync
 from contract import DeviceError
@@ -24,9 +22,7 @@ PROBES_PER_RUN = 3
 
 def run_once(manager: RelayManager, settings: Settings) -> None:
     with SessionLocal() as db:
-        system = db.get(SystemModel, SYSTEM_ID)
-        if system is None or system.status != "ACTIVE":
-            grid_sync.register_system(db, manager.adapter)
+        grid_sync.register_system(db, manager.adapter)       # the connection test doubles as the grid's health check each cycle
         grid_sync.sync_inventory(db, manager.adapter, probe_limit=PROBES_PER_RUN)
         if settings.relay_enabled:
             manager.sync_paths(db)
