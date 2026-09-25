@@ -127,6 +127,24 @@ def get_health_status(db: Session = Depends(get_db)):
             )
         )
 
+    # Additional health dimensions registered by other subsystems (e.g. "YOLO_MODEL" for the
+    # local KAAVAL AI detector). Surfaced as-is so their failures stay independent from
+    # camera / node / runtime / pipe health.
+    seen = {c.entity_type + ":" + c.entity_id for c in components}
+    extra_ready = 0
+    for key, rec in hr_map.items():
+        if key in seen:
+            continue
+        components.append(ComponentHealth(
+            entity_id=rec.entity_id,
+            entity_type=rec.entity_type,
+            status=rec.status,
+            last_seen=rec.last_observed,
+            details=rec.details or {},
+        ))
+        if rec.entity_type == "YOLO_MODEL" and rec.status == "READY":
+            extra_ready += 1
+
     overall_status = "HEALTHY" if (db_status == "CONNECTED" and nodes_online > 0) else "DEGRADED"
 
     return HealthSummaryResponse(
@@ -141,6 +159,7 @@ def get_health_status(db: Session = Depends(get_db)):
             "nodes_online": nodes_online,
             "ai_runtimes_running": runtimes_running,
             "event_pipes_up": pipes_up,
+            "yolo_models_ready": extra_ready,
         },
         components=components,
     )

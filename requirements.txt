@@ -10,4 +10,9 @@ python-dateutil>=2.9.0
 
 # Live feed reading and detection (python -m app.live.worker)
 numpy>=1.26
-opencv-python-headless>=4.9,<5
+opencv-python>=4.9,<5
+
+# KAAVAL AI: local YOLO helmet detection layer (app.ai) — local weights only,
+# no cloud API key. Fetch weights with: python -m app.ai.fetch_model
+ultralytics>=8.3.0,<9
+lapx>=0.5.2        # linear-assignment lib ByteTrack needs when AI_TRACKING_ENABLED=true

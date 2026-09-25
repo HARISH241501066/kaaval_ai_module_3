@@ -78,6 +78,35 @@ class Settings(BaseSettings):
     m3_ingest_base_url: str = "http://localhost:8000"
     live_model_dir: str = "models"
 
+    # --- KAAVAL AI: local YOLO helmet detection layer (app.ai) ---
+    # Local weights for the helmet detector (fetched with: python -m app.ai.fetch_model).
+    ai_model_path: str = "models/helmet_model.pt"
+    ai_model_name: str = "yolov8n-helmet-detection"   # provenance: model_name in the canonical event
+    ai_model_version: str = "1.0.0"                   # provenance: model_version in the canonical event
+    ai_confidence_threshold: float = 0.50             # detections below this are dropped
+    ai_inference_fps: float = 2.0                     # inference observations per second of video
+    # Model input size (pixels). YOLO letterboxes every frame into a square imgsz, so one
+    # global 640 silently destroys detection on a 4K feed: a 3840x2160 frame is scaled by
+    # 1/6 and a rider's head lands at ~15 px, below what the helmet model can see. This is
+    # the UPPER bound; with ai_image_size_auto the detector derives the actual size from the
+    # source resolution (~1280 for 4K, 640 for anything <= 1280 px wide).
+    ai_image_size: int = 1280
+    # true  -> inference size follows the source resolution (see AIConfig.inference_size)
+    # false -> always use ai_image_size verbatim (fixed cost, useful for benchmarks/tests)
+    ai_image_size_auto: bool = True
+    ai_device: str = "cpu"                            # "cpu", "0"/"1" for CUDA, "mps" for Apple silicon
+    ai_tracking_enabled: bool = True                  # YOLO persistent tracking (ByteTrack) when available
+    # --- Kaaval AI decision logic (temporal confirmation, not per-frame events) ---
+    ai_helmet_min_confidence: float = 0.60            # WITH/WITHOUT_HELMET confidence feeding the rule engine
+    ai_helmet_confirmation_frames: int = 3            # observations required before a violation is confirmed
+    ai_helmet_event_cooldown_s: float = 10.0          # min video-seconds between two events on the same camera
+    # --- evidence frames & topology ---
+    ai_evidence_dir: str = "evidence"                 # evidence/<yyyy>/<mm>/<dd>/<event_id>.jpg
+    ai_processing_node_id: str = "RDK-X5-001"         # provenance processing_node_id for locally processed events
+    # Demo video -> camera map: "CAM-001=path/one.mp4;CAM-002=path/two.mp4".
+    # Swap .mp4 for an RTSP URI later without changing the detector interface.
+    ai_video_sources: str = "CAM-001=camera_feed/camera_main.mp4;CAM-002=camera_feed/camera_sub.mp4"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -21,6 +21,8 @@ from app.api.ingestion import router as ingestion_router
 from app.api.events import router as events_router
 from app.api.provenance import router as provenance_router
 from app.api.grid import router as grid_router, federation_router as broker_router
+from app.api.ai import router as ai_router
+from app.api.ui import router as ui_router
 from app.live.redact import Redactor, install_log_redaction
 from app.relay.manager import get_relay_manager
 from app.services.grid_scheduler import GridScheduler
@@ -47,6 +49,14 @@ async def lifespan(app: FastAPI):
     # Seed demo topology
     with SessionLocal() as db:
         seed_initial_topology(db)
+
+    # KAAVAL AI: register the local-video demo topology (system / node / cameras / assignments).
+    # Additive and idempotent: failures here never stop the federation backend.
+    try:
+        from app.ai.topology import ensure_ai_video_topology
+        ensure_ai_video_topology()
+    except Exception as e:
+        logger.warning(f"AI video topology bootstrap skipped: {e}")
 
     # Initialize adapter registry
     registry = get_adapter_registry()
@@ -88,6 +98,11 @@ and central GPU servers into unified Sentinel-level interfaces.
 5. **C3 Stream Source Broker**: Exposes internal relay stream endpoints without exposing upstream vendor credentials.
 6. **Live AI Provenance**: Traces complete AI lineage from camera to inference metrics and model versions.
 7. **Mock Module 4 Delivery**: Verifies real-time event publishing downstream.
+8. **KAAVAL AI (local YOLO) helmet detection**: `/ai/helmet/*` — process road videos with a
+   local YOLO model, confirm HELMET_VIOLATION events with temporal logic, save evidence
+   frames, and feed everything through the same C4 ingestion pipeline.
+
+   Browser console: **[/ui/ai](/ui/ai)** (start a job, watch it run, see evidence frames).
     """,
     version=settings.version,
     lifespan=lifespan,
@@ -112,6 +127,8 @@ app.include_router(events_router)
 app.include_router(provenance_router)
 app.include_router(grid_router)
 app.include_router(broker_router)
+app.include_router(ai_router)
+app.include_router(ui_router)
 
 
 @app.get("/", include_in_schema=False)

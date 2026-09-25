@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KAAVAL AI · Helmet detection · Sentinel M3</title>
+  <meta name="description" content="Run the local YOLO helmet detector over road video and watch HELMET_VIOLATION events enter the Sentinel Module 3 pipeline.">
+  <meta name="color-scheme" content="light dark">
+  <!-- Absolute paths: the page is served at /ui/ai (no trailing slash), so a relative
+       "app.js" would resolve against /ui/ and 404. -->
+  <link rel="stylesheet" href="/ui/ai/styles.css">
+  <script type="module" src="/ui/ai/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="bar">
+    <div class="wrap bar__row">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span>
+          <strong>KAAVAL AI</strong>
+          <span class="brand__sub">Local YOLO helmet detection · Sentinel Module 3</span>
+        </span>
+      </div>
+      <nav class="bar__links" aria-label="Related">
+        <a href="/docs">API</a>
+        <a href="/health">Health</a>
+        <a href="/api/v1/events">Canonical events</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <h1>Rider helmet detection</h1>
+    <p class="lede">
+      Decodes a camera video, runs the local YOLO helmet model, confirms violations with
+      temporal logic, writes an evidence frame, and pushes each event through the existing
+      M3 ingestion pipeline. One event per violation episode — never one per frame.
+    </p>
+
+    <section class="panel" aria-labelledby="h-run">
+      <div class="panel__head">
+        <h2 id="h-run">Run detection</h2>
+        <span id="job-state" class="pill pill--idle" role="status">idle</span>
+      </div>
+      <form id="run-form" class="controls">
+        <label for="camera">Camera</label>
+        <select id="camera" name="camera"></select>
+        <span id="camera-video" class="mono muted"></span>
+        <button id="run" type="submit" aria-busy="false">Start job</button>
+      </form>
+      <p id="run-msg" class="msg" role="status" aria-live="polite"></p>
+      <dl id="metrics" class="metrics" hidden></dl>
+      <div class="progress" hidden id="progress-wrap">
+        <div class="progress__bar"><span id="progress-fill"></span></div>
+        <span id="progress-label" class="mono muted"></span>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-model">
+      <div class="panel__head"><h2 id="h-model">Model &amp; pipeline health</h2></div>
+      <div id="health" class="health" aria-busy="true"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-violations">
+      <div class="panel__head">
+        <h2 id="h-violations">Confirmed violations</h2>
+        <span id="violation-count" class="pill pill--idle">0</span>
+      </div>
+      <div id="violations" class="violations">
+        <p class="muted">Start a job to detect riders without a helmet.</p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-jobs">
+      <div class="panel__head"><h2 id="h-jobs">Recent jobs</h2></div>
+      <div class="tablewrap" tabindex="0" role="region" aria-label="Recent jobs">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Job</th><th scope="col">Camera</th><th scope="col">Status</th>
+              <th scope="col">Frames</th><th scope="col">Detections</th><th scope="col">Violations</th>
+              <th scope="col">Time</th>
+            </tr>
+          </thead>
+          <tbody id="jobs"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="note">
+      Prototype: the job runner is an in-memory registry with a daemon thread, and evidence is a
+      local JPEG directory. Processing a 26 s 4K clip takes roughly 30–45 s on CPU.
+    </p>
+  </main>
+
+  <div id="toasts" class="toasts" aria-hidden="true"></div>
+</body>
+</html>

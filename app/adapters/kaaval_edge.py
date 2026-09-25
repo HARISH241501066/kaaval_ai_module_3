@@ -91,14 +91,23 @@ class KaavalEdgeAdapter(BaseAdapter):
         colour = data.get("colour")
         bbox = data.get("bbox") if isinstance(data.get("bbox"), list) else []
 
-        obj_type = "VEHICLE" if (plate_number or vehicle_class or "RIDING" in event_type or "HELMET" in event_type) else "OBJECT"
+        # Local AI events (KAAVAL AI / YOLO) may declare the detected object explicitly
+        # (e.g. "MOTORCYCLE_RIDER"); otherwise keep the legacy heuristic.
+        obj_type = data.get("object_type") or (
+            "VEHICLE" if (plate_number or vehicle_class or "RIDING" in event_type or "HELMET" in event_type)
+            else "OBJECT"
+        )
 
         node_id = processing_node_id or raw_payload.get("node", "RDK-X5-UNKNOWN")
         model_version = str(raw_payload.get("model_ver", "kaaval-v2.1"))
 
-        # Build clean attributes without leaking internal raw keys
+        # Build clean attributes without leaking internal raw keys.
+        # Optional keys are honored when present (local YOLO events carry real provenance);
+        # absent keys keep the legacy defaults, so existing payloads are unchanged.
         attributes = {}
-        for key in ("riders", "count", "list", "speed_kmh", "lane"):
+        for key in ("riders", "count", "list", "speed_kmh", "lane",
+                    "helmet_status", "track_id", "frame_number", "video_timestamp",
+                    "confirmations", "vehicle_bbox", "detection_model"):
             if key in data:
                 attributes[key] = data[key]
         if "violation" not in attributes and "VIOLATION" in event_type:
@@ -116,11 +125,11 @@ class KaavalEdgeAdapter(BaseAdapter):
             ),
             processing=ProcessingProvenance(
                 processing_node_id=node_id,
-                analytics_version="kaaval-agent-1.4.0",
-                model_name=f"KAAVAL_{event_type}",
+                analytics_version=str(raw_payload.get("agent_ver") or "kaaval-agent-1.4.0"),
+                model_name=str(raw_payload.get("model_name") or f"KAAVAL_{event_type}"),
                 model_version=model_version,
-                inference_fps=15.0,
-                latency_ms=38.5,
+                inference_fps=float(raw_payload.get("fps") or 15.0),
+                latency_ms=float(raw_payload.get("latency_ms") or 38.5),
             ),
             confidence=round(conf, 4),
             object=ObjectDetection(
@@ -131,10 +140,15 @@ class KaavalEdgeAdapter(BaseAdapter):
                 bounding_box=bbox,
             ),
             attributes=attributes,
-            evidence_ref={
-                "image": f"mock://evidence/kaaval/{source_evt_id}.jpg",
-                "video": f"mock://evidence/kaaval/{source_evt_id}.mp4",
-            },
+            # Local AI events carry a real evidence_ref ({"type": "local_file", "uri": ...});
+            # legacy payloads keep the mock URLs.
+            evidence_ref=(
+                dict(data["evidence_ref"]) if isinstance(data.get("evidence_ref"), dict)
+                else {
+                    "image": f"mock://evidence/kaaval/{source_evt_id}.jpg",
+                    "video": f"mock://evidence/kaaval/{source_evt_id}.mp4",
+                }
+            ),
             delivery_status="DELIVERED",
         )
 
