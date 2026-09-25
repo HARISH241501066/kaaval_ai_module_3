@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +40,23 @@ class Settings(BaseSettings):
     # 'http' → POST to m4_endpoint_url
     m4_delivery_mode: str = "log"
     m4_endpoint_url: str = "http://localhost:9000/events"
+
+    # --- Sentinel Camera Grid (live CCTV feeds) ---
+    # Credentials come only from the environment / .env and are never returned by the API or logged.
+    sentinel_grid_email: str = ""
+    sentinel_grid_password: SecretStr = SecretStr("")
+    sentinel_grid_host: str = "103.250.160.189"
+    sentinel_grid_rtsp_port: int = 8554
+    sentinel_grid_web_base: str = "https://cctv.corp8.cloud"
+
+    # --- live detection worker (python -m app.live.worker) ---
+    live_cameras: str = ""            # comma separated grid ids; empty = first live_max_cameras of the catalogue
+    live_max_cameras: int = 3         # every open camera costs the grid one stream copy
+    live_sample_fps: float = 4.0      # detections per second of video, on the stream's own timestamps
+    live_min_confidence: float = 0.45
+    live_node_id: str = "LIVE-DETECTOR-001"
+    m3_ingest_base_url: str = "http://localhost:8000"
+    live_model_dir: str = "models"
 
 
 @lru_cache

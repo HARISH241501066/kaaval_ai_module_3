@@ -7,3 +7,7 @@ httpx>=0.27.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 python-dateutil>=2.9.0
+
+# Live feed reading and detection (python -m app.live.worker)
+numpy>=1.26
+opencv-python-headless>=4.9,<5

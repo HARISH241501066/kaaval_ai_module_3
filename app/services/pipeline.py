@@ -264,8 +264,8 @@ class C4IngestionPipeline:
                 res = await self.ingest_single_event(
                     db=db,
                     raw_payload=item,
-                    provider="KAAVAL_AI",
-                    adapter_name="KAAVAL_EDGE",
+                    provider=str(item.get("provider") or "KAAVAL_AI"),
+                    adapter_name=str(item.get("adapter") or "KAAVAL_EDGE"),
                 )
                 if res.status == "ACCEPTED":
                     accepted += 1
