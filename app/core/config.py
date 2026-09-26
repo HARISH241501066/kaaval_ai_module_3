@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -84,7 +84,14 @@ class Settings(BaseSettings):
     ai_model_name: str = "yolov8n-helmet-detection"   # provenance: model_name in the canonical event
     ai_model_version: str = "1.0.0"                   # provenance: model_version in the canonical event
     ai_confidence_threshold: float = 0.50             # detections below this are dropped
-    ai_inference_fps: float = 2.0                     # inference observations per second of video
+    # --- frame selection (demo coverage first) ---
+    # AI_FRAME_SKIP=0 (default) => run YOLO on EVERY decoded frame (maximum coverage).
+    # AI_FRAME_SKIP=1 => every 2nd frame, AI_FRAME_SKIP=4 => every 5th frame, ...
+    ai_frame_skip: int = 0
+    # Legacy time-based throttle: inference observations per second of video. 0 = disabled.
+    # Kept for the AI_INFERENCE_FPS env var and for machines that cannot run every frame; the
+    # frame loop processes every frame unless AI_FRAME_SKIP or AI_INFERENCE_FPS asks otherwise.
+    ai_inference_fps: float = 0.0
     # Model input size (pixels). YOLO letterboxes every frame into a square imgsz, so one
     # global 640 silently destroys detection on a 4K feed: a 3840x2160 frame is scaled by
     # 1/6 and a rider's head lands at ~15 px, below what the helmet model can see. This is
@@ -97,11 +104,50 @@ class Settings(BaseSettings):
     ai_device: str = "cpu"                            # "cpu", "0"/"1" for CUDA, "mps" for Apple silicon
     ai_tracking_enabled: bool = True                  # YOLO persistent tracking (ByteTrack) when available
     # --- Kaaval AI decision logic (temporal confirmation, not per-frame events) ---
-    ai_helmet_min_confidence: float = 0.60            # WITH/WITHOUT_HELMET confidence feeding the rule engine
-    ai_helmet_confirmation_frames: int = 3            # observations required before a violation is confirmed
+    ai_helmet_min_confidence: float = Field(
+        default=0.60,
+        # The Kaaval-era name and the Google-era name are the same knob; both env vars work.
+        validation_alias=AliasChoices("AI_HELMET_MIN_CONFIDENCE", "HELMET_CONFIDENCE_THRESHOLD"),
+    )
+    ai_helmet_confirmation_frames: int = Field(
+        default=3,
+        validation_alias=AliasChoices("AI_HELMET_CONFIRMATION_FRAMES", "HELMET_CONFIRMATION_OBSERVATIONS"),
+    )
     ai_helmet_event_cooldown_s: float = 10.0          # min video-seconds between two events on the same camera
+
+    # --- AI provider routing: Google Cloud primary, local YOLO fallback ---------
+    # AI_PROVIDER=google  -> Cloud Video Intelligence analysis (falls back locally when the
+    #                        Google APIs are not configured, if AI_ALLOW_LOCAL_FALLBACK=true)
+    # AI_PROVIDER=yolo    -> the local YOLO helmet pipeline only
+    ai_provider: str = "google"
+    ai_allow_local_fallback: bool = True
+    # HELMET_PROVIDER=yolo: Cloud Video Intelligence detects/tracks people and objects but
+    # does NOT classify helmet status, so helmet status always comes from a classifier.
+    helmet_provider: str = "yolo"
+    # ANPR_PROVIDER=google_vision (Cloud Vision OCR) | none
+    anpr_provider: str = "google_vision"
+    anpr_enabled: bool = True
+    anpr_min_plate_length: int = 6
+    anpr_max_per_job: int = 20                        # hard bound on Vision OCR calls per job
+
+    # --- Google Cloud (credentials must never be committed) ---------------------
+    google_cloud_project_id: str = ""                 # GOOGLE_CLOUD_PROJECT_ID
+    google_application_credentials: str = ""          # GOOGLE_APPLICATION_CREDENTIALS (path to the SA JSON)
+    google_vision_credentials: str = ""               # GOOGLE_VISION_CREDENTIALS (optional separate key)
+    google_video_region: str = ""                     # us-east1 | us-west1 | europe-west1 | asia-east1 ("" = auto)
+    google_video_features: str = "PERSON_DETECTION,OBJECT_TRACKING"
+    google_video_input_mode: str = "auto"             # auto | inline | gcs  (gcs = video lives at gs://)
+    google_video_inline_max_mb: int = 50              # larger local files are refused with an actionable error
+    google_api_timeout_s: int = 600                   # operation poll budget for one video
+    google_max_observations_per_track: int = 8        # helmet classifications per tracked rider (cost bound)
+    google_classification_interval_s: float = 0.25    # min video-seconds between classifications of one rider
+    google_max_classifications: int = 400             # hard bound on frame extractions/classifications per job
     # --- evidence frames & topology ---
     ai_evidence_dir: str = "evidence"                 # evidence/<yyyy>/<mm>/<dd>/<event_id>.jpg
+    # Optional annotated result video (boxes + status + confidence + track id + timestamp).
+    # Off by default: encoding a 4K clip costs as much as the inference itself.
+    ai_annotated_video: bool = False
+    ai_output_dir: str = "outputs"                    # <dir>/<video-stem>_annotated.mp4
     ai_processing_node_id: str = "RDK-X5-001"         # provenance processing_node_id for locally processed events
     # Demo video -> camera map: "CAM-001=path/one.mp4;CAM-002=path/two.mp4".
     # Swap .mp4 for an RTSP URI later without changing the detector interface.

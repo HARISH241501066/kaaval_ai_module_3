@@ -107,7 +107,13 @@ class KaavalEdgeAdapter(BaseAdapter):
         attributes = {}
         for key in ("riders", "count", "list", "speed_kmh", "lane",
                     "helmet_status", "track_id", "frame_number", "video_timestamp",
-                    "confirmations", "vehicle_bbox", "detection_model"):
+                    "confirmations", "vehicle_bbox", "detection_model",
+                    # whole-video aggregation of a locally detected unique violator
+                    "unique_violator", "observations", "violation_detections",
+                    "first_seen", "last_seen",
+                    # hybrid Google path: which analysis backend + bounded OCR outcome
+                    "analytics_provider", "helmet_classifier",
+                    "plate_status", "anpr_provider", "plate_raw_text", "anpr_confidence"):
             if key in data:
                 attributes[key] = data[key]
         if "violation" not in attributes and "VIOLATION" in event_type:
@@ -130,6 +136,13 @@ class KaavalEdgeAdapter(BaseAdapter):
                 model_version=model_version,
                 inference_fps=float(raw_payload.get("fps") or 15.0),
                 latency_ms=float(raw_payload.get("latency_ms") or 38.5),
+                # External analytics provenance: present only when the payload carries it, so
+                # legacy Kaaval payloads are unchanged.
+                analytics_provider=(str(raw_payload["analytics_provider"]) if raw_payload.get("analytics_provider") else None),
+                analytics_model_name=(str(raw_payload["analytics_model_name"]) if raw_payload.get("analytics_model_name") else None),
+                analytics_model_version=(str(raw_payload["analytics_model_version"]) if raw_payload.get("analytics_model_version") else None),
+                helmet_classifier=(str(raw_payload["helmet_classifier"]) if raw_payload.get("helmet_classifier") else None),
+                anpr_provider=(str(data["anpr_provider"]) if data.get("anpr_provider") else None),
             ),
             confidence=round(conf, 4),
             object=ObjectDetection(

@@ -103,6 +103,22 @@ button[aria-disabled="true"] { opacity: .6; cursor: progress; }
 .pill--err { border-style: solid; border-color: var(--alert); color: var(--alert); }
 
 /* metrics --------------------------------------------------------------- */
+/* The headline result: distinct riders, not frame-level detections. */
+.hero {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--s4);
+  padding: var(--s4) var(--s5);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--alert);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--alert) 5%, var(--panel));
+}
+.hero[data-state="done"] { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 6%, var(--panel)); }
+.hero__num { font: 700 clamp(38px, 6vw, 54px)/1 var(--mono); letter-spacing: -1px; }
+.hero__label { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.hero__sub { color: var(--muted); }
+
 .metrics {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--s3); margin: var(--s4) 0 0;

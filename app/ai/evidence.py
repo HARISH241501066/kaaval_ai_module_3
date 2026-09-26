@@ -45,7 +45,11 @@ def _put_label(img: np.ndarray, text: str, x: int, y: int, color) -> None:
 
 def draw_detections(frame: np.ndarray, detections: List[Detection],
                     violation: Optional[ConfirmedViolation] = None) -> np.ndarray:
-    """Annotate a copy of the frame: all detections + the confirmed violation highlighted."""
+    """Annotate a copy of the frame: all detections + the confirmed violation highlighted.
+
+    Each label carries the class, the confidence and (when the tracker provides one) the
+    track id, so a reviewer can see that "#7 WITHOUT_HELMET" is one rider, not many.
+    """
     img = frame.copy()
     for d in detections:
         color = _COLOR.get(d.class_name, _DEFAULT_COLOR)
@@ -53,10 +57,21 @@ def draw_detections(frame: np.ndarray, detections: List[Detection],
         is_hit = violation is not None and d.bbox == violation.detection.bbox
         thickness = 4 if is_hit else 2
         cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness)
-        label = f"{d.class_name} {d.confidence:.2f}"
-        if is_hit:
-            label = f"HELMET_VIOLATION {d.confidence:.2f}"
+        track = f" #{d.track_id}" if d.track_id is not None else ""
+        label = (f"HELMET_VIOLATION{track} {d.confidence:.2f}" if is_hit
+                 else f"{d.class_name}{track} {d.confidence:.2f}")
         _put_label(img, label, x1, max(0, y1 - 4), color)
+    return img
+
+
+def draw_frame_banner(img: np.ndarray, camera_id: str, timestamp: float,
+                      frame_number: int) -> np.ndarray:
+    """Top banner for the optional annotated video: camera, video time and frame number."""
+    h, w = img.shape[:2]
+    mins, secs = divmod(max(0.0, float(timestamp)), 60)
+    text = f"{camera_id}   {int(mins):02d}:{secs:05.2f}   frame {frame_number}"
+    cv2.rectangle(img, (0, 0), (w, 34), (0, 0, 0), -1)
+    cv2.putText(img, text, (8, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
     return img
 
 
@@ -84,9 +99,14 @@ def save_evidence_frame(
 
         img = draw_detections(frame, detections, violation)
         h, w = img.shape[:2]
+        # Camera ID, video timestamp, helmet status, confidence and track id — the evidence
+        # and the annotated video carry the same overlay (see the README / task spec).
+        mins, secs = divmod(max(0.0, float(violation.timestamp)), 60)
+        track = f"  track #{violation.track_id}" if violation.track_id is not None else ""
         banner = (
-            f"{violation.camera_id}  {violation.event_id}  frame {violation.frame_number}  "
-            f"t={violation.timestamp:.2f}s  conf={violation.confidence:.2f}  {model_name or ''}"
+            f"{violation.camera_id}  {int(mins):02d}:{secs:05.2f}  {violation.event_id}  "
+            f"frame {violation.frame_number}  WITHOUT HELMET  conf={violation.confidence:.2f}{track}  "
+            f"{model_name or ''}"
         ).strip()
         cv2.rectangle(img, (0, 0), (w, 34), (0, 0, 0), -1)
         cv2.putText(img, banner, (8, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)

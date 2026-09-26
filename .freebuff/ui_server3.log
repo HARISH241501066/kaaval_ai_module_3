@@ -1,0 +1,229 @@
+INFO:     Started server process [17884]
+INFO:     Waiting for application startup.
+2026-09-26 11:26:23,742 [INFO] sentinel.m3.main: Initializing Sentinel Module 3 Federation Backend...
+2026-09-26 11:26:23,742 [INFO] sentinel.m3.db: Initializing database tables...
+2026-09-26 11:26:23,758 [INFO] sentinel.m3.db: Database tables initialized successfully.
+2026-09-26 11:26:23,870 [INFO] sentinel.m3.adapters: Registered adapter: KAAVAL_EDGE (Protocol: KAAVAL_EDGE)
+2026-09-26 11:26:23,870 [INFO] sentinel.m3.adapters: Registered adapter: KAAVAL_SERVER (Protocol: KAAVAL_SERVER)
+2026-09-26 11:26:23,870 [INFO] sentinel.m3.adapters: Registered adapter: LIVE_DETECTOR (Protocol: SENTINEL_GRID)
+2026-09-26 11:26:23,870 [INFO] sentinel.m3.adapters: Registered adapter: SENTINEL_GRID (Protocol: SENTINEL_GRID)
+2026-09-26 11:26:23,870 [INFO] sentinel.m3.main: Loaded adapters: ['KAAVAL_EDGE', 'KAAVAL_SERVER', 'LIVE_DETECTOR', 'SENTINEL_GRID']
+2026-09-26 11:26:24,842 [INFO] sentinel.m3.main: Sentinel Module 3 Backend ready. Swagger docs available at /docs
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8125 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59215 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59216 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 11:26:34,892 [INFO] sentinel.m3.ai.detector: loaded helmet model yolov8n-helmet-detection v1.0.0 (2 classes: With Helmet, Without Helmet) on device=cpu
+2026-09-26 11:26:35,206 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_sub.mp4 as CAM-002 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=frame_skip:4 conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:26:35,206 [INFO] sentinel.m3.ai.processor: video metadata: 605 frames @ 30.000 fps (20.17s), 3840x2160 | sampling frame_skip:4
+2026-09-26 11:26:42,251 [INFO] sentinel.m3.ai.kaaval: violation episode confirmed on CAM-002 (streaming tracker): EVT-4DC14D30D5 conf=0.69 frame=10 t=0.33s (3 observations) — counted once per unique rider at finalization
+2026-09-26 11:26:42,252 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-AAC53A6AED (track=1) after 3 observations at t=0.33s
+2026-09-26 11:26:42,357 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-AAC53A6AED.jpg
+2026-09-26 11:26:42,361 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-AAC53A6AED.jpg for unique violator EVT-AAC53A6AED (track=1)
+2026-09-26 11:26:45,488 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-22FDF874EE (track=None) after 3 observations at t=1.83s
+2026-09-26 11:26:45,569 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-22FDF874EE.jpg
+2026-09-26 11:26:45,571 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-22FDF874EE.jpg for unique violator EVT-22FDF874EE (track=None)
+2026-09-26 11:26:46,304 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=2.17s suppressed by cooldown (1.83s < 10.0s since last event)
+2026-09-26 11:26:48,363 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-5187EF84F7 (track=None) after 3 observations at t=3.17s
+2026-09-26 11:26:48,448 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-5187EF84F7.jpg
+2026-09-26 11:26:48,450 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-5187EF84F7.jpg for unique violator EVT-5187EF84F7 (track=None)
+2026-09-26 11:26:49,931 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=3.83s suppressed by cooldown (3.50s < 10.0s since last event)
+2026-09-26 11:26:52,069 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=4.83s suppressed by cooldown (4.50s < 10.0s since last event)
+2026-09-26 11:26:53,486 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-CD3E5730F2 (track=None) after 3 observations at t=5.50s
+2026-09-26 11:26:53,575 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-CD3E5730F2.jpg
+2026-09-26 11:26:53,577 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-CD3E5730F2.jpg for unique violator EVT-CD3E5730F2 (track=None)
+2026-09-26 11:26:53,896 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=5.67s suppressed by cooldown (5.33s < 10.0s since last event)
+2026-09-26 11:26:56,328 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=6.83s suppressed by cooldown (6.50s < 10.0s since last event)
+2026-09-26 11:27:00,420 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=8.83s suppressed by cooldown (8.50s < 10.0s since last event)
+2026-09-26 11:27:00,421 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-33D4D8E8AB (track=None) after 3 observations at t=8.83s
+2026-09-26 11:27:00,501 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-33D4D8E8AB.jpg
+2026-09-26 11:27:00,503 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-33D4D8E8AB.jpg for unique violator EVT-33D4D8E8AB (track=None)
+2026-09-26 11:27:01,992 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-33D4D8E8AB.jpg
+2026-09-26 11:27:01,995 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-33D4D8E8AB.jpg for unique violator EVT-33D4D8E8AB (track=None)
+INFO:     127.0.0.1:53659 - "GET /ui/ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53659 - "GET /ui/ai/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53660 - "GET /ui/ai/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53660 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53659 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53660 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53666 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+2026-09-26 11:27:06,657 [INFO] sentinel.m3.ai.kaaval: violation episode confirmed on CAM-002 (streaming tracker): EVT-C7C1E2638A conf=0.62 frame=350 t=11.67s (3 observations) — counted once per unique rider at finalization
+2026-09-26 11:27:06,657 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-43B94B8735 (track=None) after 3 observations at t=11.67s
+2026-09-26 11:27:06,735 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-43B94B8735.jpg
+2026-09-26 11:27:06,738 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-43B94B8735.jpg for unique violator EVT-43B94B8735 (track=None)
+2026-09-26 11:27:09,361 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=13.00s suppressed by cooldown (1.33s < 10.0s since last event)
+2026-09-26 11:27:09,361 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-A3A344E28F (track=None) after 3 observations at t=13.00s
+2026-09-26 11:27:09,446 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-A3A344E28F.jpg
+2026-09-26 11:27:09,449 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-A3A344E28F.jpg for unique violator EVT-A3A344E28F (track=None)
+INFO:     127.0.0.1:60324 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60323 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+2026-09-26 11:27:24,112 [INFO] sentinel.m3.ai.processor: sending EVT-AAC53A6AED to M3 ingestion (camera=CAM-002, track=1, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-AAC53A6AED.jpg)
+2026-09-26 11:27:24,182 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-757257de5734 type=HELMET_VIOLATION cam=CAM-002 conf=0.7788
+2026-09-26 11:27:24,182 [INFO] sentinel.m3.publisher: Published event evt-757257de5734 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,183 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-AAC53A6AED: ACCEPTED (canonical=evt-757257de5734)
+2026-09-26 11:27:24,183 [INFO] sentinel.m3.ai.processor: sending EVT-5187EF84F7 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-5187EF84F7.jpg)
+2026-09-26 11:27:24,225 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-085d7b099a37 type=HELMET_VIOLATION cam=CAM-002 conf=0.724
+2026-09-26 11:27:24,225 [INFO] sentinel.m3.publisher: Published event evt-085d7b099a37 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,226 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-5187EF84F7: ACCEPTED (canonical=evt-085d7b099a37)
+2026-09-26 11:27:24,227 [INFO] sentinel.m3.ai.processor: sending EVT-22FDF874EE to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-22FDF874EE.jpg)
+2026-09-26 11:27:24,265 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-a75c187bb573 type=HELMET_VIOLATION cam=CAM-002 conf=0.7652
+2026-09-26 11:27:24,265 [INFO] sentinel.m3.publisher: Published event evt-a75c187bb573 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,266 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-22FDF874EE: ACCEPTED (canonical=evt-a75c187bb573)
+2026-09-26 11:27:24,266 [INFO] sentinel.m3.ai.processor: sending EVT-CD3E5730F2 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-CD3E5730F2.jpg)
+2026-09-26 11:27:24,303 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-11dccfc1b0a2 type=HELMET_VIOLATION cam=CAM-002 conf=0.7576
+2026-09-26 11:27:24,304 [INFO] sentinel.m3.publisher: Published event evt-11dccfc1b0a2 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,305 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-CD3E5730F2: ACCEPTED (canonical=evt-11dccfc1b0a2)
+2026-09-26 11:27:24,305 [INFO] sentinel.m3.ai.processor: sending EVT-33D4D8E8AB to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-33D4D8E8AB.jpg)
+2026-09-26 11:27:24,340 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-63b72310dd1f type=HELMET_VIOLATION cam=CAM-002 conf=0.7424
+2026-09-26 11:27:24,340 [INFO] sentinel.m3.publisher: Published event evt-63b72310dd1f to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,341 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-33D4D8E8AB: ACCEPTED (canonical=evt-63b72310dd1f)
+2026-09-26 11:27:24,341 [INFO] sentinel.m3.ai.processor: sending EVT-43B94B8735 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-43B94B8735.jpg)
+2026-09-26 11:27:24,377 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-c0de4a9fe609 type=HELMET_VIOLATION cam=CAM-002 conf=0.6161
+2026-09-26 11:27:24,377 [INFO] sentinel.m3.publisher: Published event evt-c0de4a9fe609 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,378 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-43B94B8735: ACCEPTED (canonical=evt-c0de4a9fe609)
+2026-09-26 11:27:24,378 [INFO] sentinel.m3.ai.processor: sending EVT-A3A344E28F to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-A3A344E28F.jpg)
+2026-09-26 11:27:24,416 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-6638cf647f0a type=HELMET_VIOLATION cam=CAM-002 conf=0.7412
+2026-09-26 11:27:24,416 [INFO] sentinel.m3.publisher: Published event evt-6638cf647f0a to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:27:24,417 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-A3A344E28F: ACCEPTED (canonical=evt-6638cf647f0a)
+2026-09-26 11:27:24,418 [INFO] sentinel.m3.ai.processor: done camera_feed/camera_sub.mp4: 121/605 frames processed (484 skipped), 101 detections, 60 frame-level violations, 7 UNIQUE violators, 7 evidence frame(s), 48.9s (2.47 fps)
+2026-09-26 11:27:24,421 [INFO] sentinel.m3.ai.jobs: job job-ae6c76ef2311 COMPLETED: 7 violation event(s)
+INFO:     127.0.0.1:61847 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61846 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55898 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55897 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55900 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55901 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55906 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55905 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55905 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 11:28:22,779 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_sub.mp4 as CAM-002 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=frame_skip:4 conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:28:22,780 [INFO] sentinel.m3.ai.processor: video metadata: 605 frames @ 30.000 fps (20.17s), 3840x2160 | sampling frame_skip:4
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:24,585 [INFO] sentinel.m3.ai.kaaval: violation episode confirmed on CAM-002 (streaming tracker): EVT-A15BF4209E conf=0.69 frame=10 t=0.33s (3 observations) — counted once per unique rider at finalization
+2026-09-26 11:28:24,585 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-3F382B437D (track=1) after 3 observations at t=0.33s
+2026-09-26 11:28:24,683 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-3F382B437D.jpg
+2026-09-26 11:28:24,686 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-3F382B437D.jpg for unique violator EVT-3F382B437D (track=1)
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:28,582 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-9CF168091B (track=None) after 3 observations at t=1.83s
+2026-09-26 11:28:28,665 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-9CF168091B.jpg
+2026-09-26 11:28:28,667 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-9CF168091B.jpg for unique violator EVT-9CF168091B (track=None)
+2026-09-26 11:28:29,405 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=2.17s suppressed by cooldown (1.83s < 10.0s since last event)
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:31,666 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-6A31305709 (track=None) after 3 observations at t=3.17s
+2026-09-26 11:28:31,750 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-6A31305709.jpg
+2026-09-26 11:28:31,752 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-6A31305709.jpg for unique violator EVT-6A31305709 (track=None)
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:33,411 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=3.83s suppressed by cooldown (3.50s < 10.0s since last event)
+INFO:     127.0.0.1:56485 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:35,840 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=4.83s suppressed by cooldown (4.50s < 10.0s since last event)
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:37,308 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-7FEC442111 (track=None) after 3 observations at t=5.50s
+2026-09-26 11:28:37,387 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-7FEC442111.jpg
+2026-09-26 11:28:37,390 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-7FEC442111.jpg for unique violator EVT-7FEC442111 (track=None)
+2026-09-26 11:28:37,809 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=5.67s suppressed by cooldown (5.33s < 10.0s since last event)
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:40,143 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=6.83s suppressed by cooldown (6.50s < 10.0s since last event)
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56483 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:44,116 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=8.83s suppressed by cooldown (8.50s < 10.0s since last event)
+2026-09-26 11:28:44,116 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-CDBB633F62 (track=None) after 3 observations at t=8.83s
+2026-09-26 11:28:44,196 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-CDBB633F62.jpg
+2026-09-26 11:28:44,199 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-CDBB633F62.jpg for unique violator EVT-CDBB633F62 (track=None)
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:46,071 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-CDBB633F62.jpg
+2026-09-26 11:28:46,074 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-CDBB633F62.jpg for unique violator EVT-CDBB633F62 (track=None)
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61482 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:51,739 [INFO] sentinel.m3.ai.kaaval: violation episode confirmed on CAM-002 (streaming tracker): EVT-F4B615C88D conf=0.62 frame=350 t=11.67s (3 observations) — counted once per unique rider at finalization
+2026-09-26 11:28:51,740 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-128539C091 (track=None) after 3 observations at t=11.67s
+2026-09-26 11:28:51,828 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-128539C091.jpg
+2026-09-26 11:28:51,830 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-128539C091.jpg for unique violator EVT-128539C091 (track=None)
+INFO:     127.0.0.1:61481 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:28:54,811 [INFO] sentinel.m3.ai.kaaval: confirmed violation on CAM-002 at t=13.00s suppressed by cooldown (1.33s < 10.0s since last event)
+2026-09-26 11:28:54,811 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-1C5B24BB5F (track=None) after 3 observations at t=13.00s
+2026-09-26 11:28:54,900 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-1C5B24BB5F.jpg
+2026-09-26 11:28:54,903 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-1C5B24BB5F.jpg for unique violator EVT-1C5B24BB5F (track=None)
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55842 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+2026-09-26 11:29:09,810 [INFO] sentinel.m3.ai.processor: sending EVT-3F382B437D to M3 ingestion (camera=CAM-002, track=1, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-3F382B437D.jpg)
+2026-09-26 11:29:09,873 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-b2e7ca80a997 type=HELMET_VIOLATION cam=CAM-002 conf=0.7788
+2026-09-26 11:29:09,873 [INFO] sentinel.m3.publisher: Published event evt-b2e7ca80a997 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:09,875 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-3F382B437D: ACCEPTED (canonical=evt-b2e7ca80a997)
+2026-09-26 11:29:09,875 [INFO] sentinel.m3.ai.processor: sending EVT-6A31305709 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-6A31305709.jpg)
+2026-09-26 11:29:09,913 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-b32a47958c23 type=HELMET_VIOLATION cam=CAM-002 conf=0.724
+2026-09-26 11:29:09,913 [INFO] sentinel.m3.publisher: Published event evt-b32a47958c23 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:09,914 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-6A31305709: ACCEPTED (canonical=evt-b32a47958c23)
+2026-09-26 11:29:09,914 [INFO] sentinel.m3.ai.processor: sending EVT-9CF168091B to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-9CF168091B.jpg)
+2026-09-26 11:29:09,950 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-db93859d2a20 type=HELMET_VIOLATION cam=CAM-002 conf=0.7652
+2026-09-26 11:29:09,950 [INFO] sentinel.m3.publisher: Published event evt-db93859d2a20 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:09,951 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-9CF168091B: ACCEPTED (canonical=evt-db93859d2a20)
+2026-09-26 11:29:09,951 [INFO] sentinel.m3.ai.processor: sending EVT-7FEC442111 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-7FEC442111.jpg)
+2026-09-26 11:29:09,985 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-2a53d5ddc288 type=HELMET_VIOLATION cam=CAM-002 conf=0.7576
+2026-09-26 11:29:09,986 [INFO] sentinel.m3.publisher: Published event evt-2a53d5ddc288 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:09,986 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-7FEC442111: ACCEPTED (canonical=evt-2a53d5ddc288)
+2026-09-26 11:29:09,986 [INFO] sentinel.m3.ai.processor: sending EVT-CDBB633F62 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-CDBB633F62.jpg)
+2026-09-26 11:29:10,021 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-4bd793bc18d7 type=HELMET_VIOLATION cam=CAM-002 conf=0.7424
+2026-09-26 11:29:10,021 [INFO] sentinel.m3.publisher: Published event evt-4bd793bc18d7 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:10,022 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-CDBB633F62: ACCEPTED (canonical=evt-4bd793bc18d7)
+2026-09-26 11:29:10,022 [INFO] sentinel.m3.ai.processor: sending EVT-128539C091 to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-128539C091.jpg)
+2026-09-26 11:29:10,060 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-53d5c2f34cb7 type=HELMET_VIOLATION cam=CAM-002 conf=0.6161
+2026-09-26 11:29:10,060 [INFO] sentinel.m3.publisher: Published event evt-53d5c2f34cb7 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:10,061 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-128539C091: ACCEPTED (canonical=evt-53d5c2f34cb7)
+2026-09-26 11:29:10,061 [INFO] sentinel.m3.ai.processor: sending EVT-1C5B24BB5F to M3 ingestion (camera=CAM-002, track=None, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-1C5B24BB5F.jpg)
+2026-09-26 11:29:10,097 [INFO] sentinel.m3.publisher: [MOCK M4 CONSUMER] Successfully received canonical event evt-d404a3436061 type=HELMET_VIOLATION cam=CAM-002 conf=0.7412
+2026-09-26 11:29:10,097 [INFO] sentinel.m3.publisher: Published event evt-d404a3436061 to downstream Sentinel Module 4 (mode: log)
+2026-09-26 11:29:10,097 [INFO] sentinel.m3.ai.processor: M3 ingestion result for EVT-1C5B24BB5F: ACCEPTED (canonical=evt-d404a3436061)
+2026-09-26 11:29:10,098 [INFO] sentinel.m3.ai.processor: done camera_feed/camera_sub.mp4: 121/605 frames processed (484 skipped), 101 detections, 60 frame-level violations, 7 UNIQUE violators, 7 evidence frame(s), 47.0s (2.57 fps)
+2026-09-26 11:29:10,100 [INFO] sentinel.m3.ai.jobs: job job-06b7bb800d9c COMPLETED: 7 violation event(s)
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/jobs/job-06b7bb800d9c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65441 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55841 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65446 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65445 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59930 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59929 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51746 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62386 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62385 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62387 - "GET /ai/helmet/jobs?limit=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62991 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62990 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62497 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62496 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52810 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52809 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51146 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51145 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63951 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63950 - "GET /ai/helmet/health HTTP/1.1" 200 OK

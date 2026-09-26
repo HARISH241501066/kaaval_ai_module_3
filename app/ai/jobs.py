@@ -26,11 +26,12 @@ class JobRegistry:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ CRUD
-    def create(self, camera_id: str, video_path: str) -> Job:
+    def create(self, camera_id: str, video_path: str, mode: str = "helmet") -> Job:
         job = Job(
             job_id=f"job-{uuid.uuid4().hex[:12]}",
             camera_id=camera_id,
             video_path=video_path,
+            mode=mode,
             created_at=time.time(),
         )
         with self._lock:
@@ -68,11 +69,18 @@ class JobRegistry:
         job.started_at = time.time()
         try:
             from app.ai.topology import ensure_ai_video_topology
-            from app.ai.video_processor import VideoProcessor
 
             ensure_ai_video_topology()          # camera/node rows exist before ingestion
             config = get_ai_config()
-            processor = VideoProcessor(config=config)
+            if job.mode == "video":
+                # provider-based path: Google Cloud Video Intelligence (or the local fallback)
+                from app.ai.video_analysis import VideoAnalysisProcessor
+
+                processor = VideoAnalysisProcessor(config=config)
+            else:
+                from app.ai.video_processor import VideoProcessor
+
+                processor = VideoProcessor(config=config)
             outcome = processor.process(job.camera_id, job.video_path, job=job)
             job.metrics = outcome["metrics"]
             job.violations = outcome["violations"]
@@ -81,6 +89,8 @@ class JobRegistry:
         except Exception as e:
             job.status = JobStatus.FAILED
             job.error = str(e)
+            # A failed video is NEVER reported as "0 violations" (no video -> no result).
+            job.metrics = {"outcome": "PROCESSING_FAILED", "error": str(e)}
             log.error("job %s FAILED: %s", job.job_id, e, exc_info=True)
         finally:
             job.finished_at = time.time()

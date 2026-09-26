@@ -22,6 +22,7 @@ from app.api.events import router as events_router
 from app.api.provenance import router as provenance_router
 from app.api.grid import router as grid_router, federation_router as broker_router
 from app.api.ai import router as ai_router
+from app.api.video import router as video_router
 from app.api.ui import router as ui_router
 from app.live.redact import Redactor, install_log_redaction
 from app.relay.manager import get_relay_manager
@@ -101,6 +102,11 @@ and central GPU servers into unified Sentinel-level interfaces.
 8. **KAAVAL AI (local YOLO) helmet detection**: `/ai/helmet/*` — process road videos with a
    local YOLO model, confirm HELMET_VIOLATION events with temporal logic, save evidence
    frames, and feed everything through the same C4 ingestion pipeline.
+9. **Cloud video analysis (Google Cloud)**: `/ai/video/*` — analyze the whole video with
+   Cloud Video Intelligence person/object tracking, classify helmet status with the local
+   helmet model (Cloud VI has no helmet verdict), extract one evidence frame per unique
+   violator, read the plate with one Cloud Vision OCR call per violation, and feed the very
+   same C4 ingestion pipeline. The local YOLO path remains available as the fallback.
 
    Browser console: **[/ui/ai](/ui/ai)** (start a job, watch it run, see evidence frames).
     """,
@@ -128,6 +134,7 @@ app.include_router(provenance_router)
 app.include_router(grid_router)
 app.include_router(broker_router)
 app.include_router(ai_router)
+app.include_router(video_router)
 app.include_router(ui_router)
 
 
