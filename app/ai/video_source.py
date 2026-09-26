@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -39,6 +39,14 @@ class VideoSource(ABC):
     def frames(self) -> Iterator[Frame]:
         """Yield (frame, frame_number, timestamp_seconds) for every decoded frame."""
 
+    @property
+    def info(self) -> Dict[str, object]:
+        """Video metadata known before/after opening: fps, frame count, duration, size."""
+        return {}
+
+    def open(self) -> None:  # pragma: no cover - default no-op
+        """Open the source so `info` is populated (idempotent; `frames()` calls it too)."""
+
     def close(self) -> None:  # pragma: no cover - default no-op
         """Release underlying resources (safe to call twice)."""
 
@@ -51,10 +59,16 @@ class LocalVideoSource(VideoSource):
         self._cap: Optional[cv2.VideoCapture] = None
         self._fps: float = 0.0
         self._frame_count: int = 0
+        self._width: int = 0
+        self._height: int = 0
 
     @property
     def describe(self) -> str:
         return self.path
+
+    @property
+    def open_source(self) -> bool:
+        return self._cap is not None
 
     @property
     def fps(self) -> float:
@@ -64,7 +78,35 @@ class LocalVideoSource(VideoSource):
     def frame_count(self) -> int:
         return self._frame_count
 
-    def _open(self) -> None:
+    @property
+    def width(self) -> int:
+        return self._width
+
+    @property
+    def height(self) -> int:
+        return self._height
+
+    @property
+    def duration_s(self) -> float:
+        """Video duration in seconds (frame_count / fps); 0.0 when not yet known."""
+        return (self._frame_count / self._fps) if self._fps > 0 and self._frame_count > 0 else 0.0
+
+    @property
+    def info(self) -> Dict[str, object]:
+        """Metadata used by the processor metrics (total_frames / video_fps / duration / size)."""
+        return {
+            "video_path": self.path,
+            "video_fps": round(self._fps, 3),
+            "total_frames": self._frame_count,
+            "video_duration_seconds": round(self.duration_s, 2),
+            "video_width": self._width,
+            "video_height": self._height,
+        }
+
+    def open(self) -> None:
+        """Open the container and read its real properties (idempotent)."""
+        if self._cap is not None:
+            return
         p = Path(self.path)
         if not p.exists():
             raise VideoError(f"video file not found: '{self.path}'")
@@ -82,12 +124,14 @@ class LocalVideoSource(VideoSource):
         self._cap = cap
         self._fps = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
         self._frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        self._width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        self._height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
         if self._fps <= 0:
             log.warning("%s: frame rate unreadable, assuming 25 fps for timestamps", self.path)
             self._fps = 25.0
 
     def frames(self) -> Iterator[Frame]:
-        self._open()
+        self.open()
         assert self._cap is not None
         index = 0
         try:
@@ -98,6 +142,7 @@ class LocalVideoSource(VideoSource):
                 if frame.size == 0:
                     log.warning("%s: decoded an empty frame at #%d — stopping", self.path, index)
                     break
+                # Timestamp from the video's OWN frame rate (never a hard-coded 30 fps).
                 yield frame, index, index / self._fps
                 index += 1
         finally:

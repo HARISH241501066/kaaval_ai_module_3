@@ -1,0 +1,312 @@
+=================================================================
+KAAVAL AI HELMET DETECTION
+=================================================================
+Camera:        CAM-001
+Video:         camera_main.mp4  (camera_feed/camera_main.mp4)
+Model:         yolov8n-helmet-detection v1.0.0  [MIT]
+Weights:       models/helmet_model.pt (found)
+Device:        CPU
+Frame coverage: every_frame  (every frame)
+Thresholds:    conf>=0.5, helmet>=0.6, confirm=3 frames, cooldown=10.0s
+Node:          RDK-X5-001  (provider KAAVAL_AI)
+[INFO] loaded helmet model yolov8n-helmet-detection v1.0.0 (2 classes: With Helmet, Without Helmet) on device=cpu
+[INFO] processing camera_feed/camera_main.mp4 as CAM-001 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+[INFO] video metadata: 797 frames @ 29.746 fps (26.79s), 3840x2160 | every frame
+[INFO] unique violator confirmed on CAM-001: EVT-1BD296744C (track=2) after 3 observations at t=0.07s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-1BD296744C.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-1BD296744C.jpg for unique violator EVT-1BD296744C (track=2)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-1BD296744C.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-1BD296744C.jpg for unique violator EVT-1BD296744C (track=2)
+[INFO] violation episode confirmed on CAM-001 (streaming tracker): EVT-D0ECF8FDE6 conf=0.85 frame=30 t=1.01s (3 observations) — counted once per unique rider at finalization
+[INFO] unique violator confirmed on CAM-001: EVT-A8769A1978 (track=9) after 3 observations at t=1.82s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-A8769A1978.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-A8769A1978.jpg for unique violator EVT-A8769A1978 (track=9)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-A8769A1978.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-A8769A1978.jpg for unique violator EVT-A8769A1978 (track=9)
+[INFO] confirmed violation on CAM-001 at t=3.83s suppressed by cooldown (2.82s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=4.47s suppressed by cooldown (3.46s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-A8769A1978.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-A8769A1978.jpg for unique violator EVT-A8769A1978 (track=9)
+[INFO] confirmed violation on CAM-001 at t=4.87s suppressed by cooldown (3.87s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=4.94s suppressed by cooldown (3.93s < 10.0s since last event)
+[INFO] unique violator confirmed on CAM-001: EVT-169879F632 (track=17) after 3 observations at t=4.94s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-169879F632.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-169879F632.jpg for unique violator EVT-169879F632 (track=17)
+[INFO] confirmed violation on CAM-001 at t=10.99s suppressed by cooldown (9.98s < 10.0s since last event)
+[INFO] unique violator confirmed on CAM-001: EVT-37DFDA843F (track=87) after 3 observations at t=10.99s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-37DFDA843F.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-37DFDA843F.jpg for unique violator EVT-37DFDA843F (track=87)
+[INFO] violation episode confirmed on CAM-001 (streaming tracker): EVT-08C8582CCD conf=0.71 frame=341 t=11.46s (3 observations) — counted once per unique rider at finalization
+[INFO] unique violator confirmed on CAM-001: EVT-C47BEF21B8 (track=90) after 3 observations at t=11.46s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-C47BEF21B8.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-C47BEF21B8.jpg for unique violator EVT-C47BEF21B8 (track=90)
+[INFO] confirmed violation on CAM-001 at t=11.93s suppressed by cooldown (0.47s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-37DFDA843F.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-37DFDA843F.jpg for unique violator EVT-37DFDA843F (track=87)
+[INFO] confirmed violation on CAM-001 at t=12.24s suppressed by cooldown (0.77s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-37DFDA843F.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-37DFDA843F.jpg for unique violator EVT-37DFDA843F (track=87)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-C47BEF21B8.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-C47BEF21B8.jpg for unique violator EVT-C47BEF21B8 (track=90)
+[INFO] confirmed violation on CAM-001 at t=12.98s suppressed by cooldown (1.51s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=13.85s suppressed by cooldown (2.39s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-37DFDA843F.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-37DFDA843F.jpg for unique violator EVT-37DFDA843F (track=87)
+[INFO] unique violator confirmed on CAM-001: EVT-FF33895630 (track=102) after 3 observations at t=14.76s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-FF33895630.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-FF33895630.jpg for unique violator EVT-FF33895630 (track=102)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-FF33895630.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-FF33895630.jpg for unique violator EVT-FF33895630 (track=102)
+[INFO] confirmed violation on CAM-001 at t=15.53s suppressed by cooldown (4.07s < 10.0s since last event)
+[INFO] unique violator confirmed on CAM-001: EVT-CF2B2E664E (track=105) after 3 observations at t=15.53s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-CF2B2E664E.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-CF2B2E664E.jpg for unique violator EVT-CF2B2E664E (track=105)
+[INFO] confirmed violation on CAM-001 at t=15.63s suppressed by cooldown (4.17s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-CF2B2E664E.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-CF2B2E664E.jpg for unique violator EVT-CF2B2E664E (track=105)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-37DFDA843F.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-37DFDA843F.jpg for unique violator EVT-37DFDA843F (track=87)
+[INFO] confirmed violation on CAM-001 at t=16.00s suppressed by cooldown (4.54s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=17.35s suppressed by cooldown (5.88s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-FF33895630.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-FF33895630.jpg for unique violator EVT-FF33895630 (track=102)
+[INFO] confirmed violation on CAM-001 at t=18.56s suppressed by cooldown (7.09s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=18.62s suppressed by cooldown (7.16s < 10.0s since last event)
+[INFO] unique violator confirmed on CAM-001: EVT-C33C32C796 (track=122) after 3 observations at t=18.62s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-C33C32C796.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-C33C32C796.jpg for unique violator EVT-C33C32C796 (track=122)
+[INFO] confirmed violation on CAM-001 at t=19.13s suppressed by cooldown (7.66s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=19.80s suppressed by cooldown (8.34s < 10.0s since last event)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-FF33895630.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-FF33895630.jpg for unique violator EVT-FF33895630 (track=102)
+[INFO] confirmed violation on CAM-001 at t=21.31s suppressed by cooldown (9.85s < 10.0s since last event)
+[INFO] violation episode confirmed on CAM-001 (streaming tracker): EVT-B1283F8512 conf=0.81 frame=642 t=21.58s (3 observations) — counted once per unique rider at finalization
+[INFO] unique violator confirmed on CAM-001: EVT-A2553B0C73 (track=165) after 3 observations at t=21.58s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-A2553B0C73.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-A2553B0C73.jpg for unique violator EVT-A2553B0C73 (track=165)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-A2553B0C73.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-A2553B0C73.jpg for unique violator EVT-A2553B0C73 (track=165)
+[INFO] confirmed violation on CAM-001 at t=23.30s suppressed by cooldown (1.71s < 10.0s since last event)
+[INFO] unique violator confirmed on CAM-001: EVT-7E1B391BA0 (track=127) after 3 observations at t=23.30s
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-7E1B391BA0.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-7E1B391BA0.jpg for unique violator EVT-7E1B391BA0 (track=127)
+[INFO] evidence frame saved: evidence/2026/09/26/EVT-7E1B391BA0.jpg
+[INFO] evidence frame evidence/2026/09/26/EVT-7E1B391BA0.jpg for unique violator EVT-7E1B391BA0 (track=127)
+[INFO] confirmed violation on CAM-001 at t=24.47s suppressed by cooldown (2.89s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=24.74s suppressed by cooldown (3.16s < 10.0s since last event)
+[INFO] confirmed violation on CAM-001 at t=24.98s suppressed by cooldown (3.40s < 10.0s since last event)
+[INFO] sending EVT-1BD296744C to M3 ingestion (camera=CAM-001, track=2, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-1BD296744C.jpg)
+[INFO] Registered adapter: KAAVAL_EDGE (Protocol: KAAVAL_EDGE)
+[INFO] Registered adapter: KAAVAL_SERVER (Protocol: KAAVAL_SERVER)
+[INFO] Registered adapter: LIVE_DETECTOR (Protocol: SENTINEL_GRID)
+[INFO] Registered adapter: SENTINEL_GRID (Protocol: SENTINEL_GRID)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-7fa9654e9c42 type=HELMET_VIOLATION cam=CAM-001 conf=0.8856
+[INFO] Published event evt-7fa9654e9c42 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-1BD296744C: ACCEPTED (canonical=evt-7fa9654e9c42)
+[INFO] sending EVT-A8769A1978 to M3 ingestion (camera=CAM-001, track=9, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-A8769A1978.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-21949c580e7f type=HELMET_VIOLATION cam=CAM-001 conf=0.9112
+[INFO] Published event evt-21949c580e7f to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-A8769A1978: ACCEPTED (canonical=evt-21949c580e7f)
+[INFO] sending EVT-169879F632 to M3 ingestion (camera=CAM-001, track=17, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-169879F632.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-161ea7831b73 type=HELMET_VIOLATION cam=CAM-001 conf=0.7934
+[INFO] Published event evt-161ea7831b73 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-169879F632: ACCEPTED (canonical=evt-161ea7831b73)
+[INFO] sending EVT-37DFDA843F to M3 ingestion (camera=CAM-001, track=87, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-37DFDA843F.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-70a5d4024c90 type=HELMET_VIOLATION cam=CAM-001 conf=0.9035
+[INFO] Published event evt-70a5d4024c90 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-37DFDA843F: ACCEPTED (canonical=evt-70a5d4024c90)
+[INFO] sending EVT-C47BEF21B8 to M3 ingestion (camera=CAM-001, track=90, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-C47BEF21B8.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-385ab9aec490 type=HELMET_VIOLATION cam=CAM-001 conf=0.8233
+[INFO] Published event evt-385ab9aec490 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-C47BEF21B8: ACCEPTED (canonical=evt-385ab9aec490)
+[INFO] sending EVT-FF33895630 to M3 ingestion (camera=CAM-001, track=102, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-FF33895630.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-be007c93f3ea type=HELMET_VIOLATION cam=CAM-001 conf=0.8635
+[INFO] Published event evt-be007c93f3ea to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-FF33895630: ACCEPTED (canonical=evt-be007c93f3ea)
+[INFO] sending EVT-CF2B2E664E to M3 ingestion (camera=CAM-001, track=105, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-CF2B2E664E.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-3af028cd7b6c type=HELMET_VIOLATION cam=CAM-001 conf=0.8622
+[INFO] Published event evt-3af028cd7b6c to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-CF2B2E664E: ACCEPTED (canonical=evt-3af028cd7b6c)
+[INFO] sending EVT-C33C32C796 to M3 ingestion (camera=CAM-001, track=122, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-C33C32C796.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-9bda1ecca0d8 type=HELMET_VIOLATION cam=CAM-001 conf=0.832
+[INFO] Published event evt-9bda1ecca0d8 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-C33C32C796: ACCEPTED (canonical=evt-9bda1ecca0d8)
+[INFO] sending EVT-A2553B0C73 to M3 ingestion (camera=CAM-001, track=165, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-A2553B0C73.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-6b1c7f75a70d type=HELMET_VIOLATION cam=CAM-001 conf=0.9006
+[INFO] Published event evt-6b1c7f75a70d to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-A2553B0C73: ACCEPTED (canonical=evt-6b1c7f75a70d)
+[INFO] sending EVT-7E1B391BA0 to M3 ingestion (camera=CAM-001, track=127, node=RDK-X5-001, evidence=evidence/2026/09/26/EVT-7E1B391BA0.jpg)
+[INFO] [MOCK M4 CONSUMER] Successfully received canonical event evt-7abab411cf05 type=HELMET_VIOLATION cam=CAM-001 conf=0.8678
+[INFO] Published event evt-7abab411cf05 to downstream Sentinel Module 4 (mode: log)
+[INFO] M3 ingestion result for EVT-7E1B391BA0: ACCEPTED (canonical=evt-7abab411cf05)
+[INFO] done camera_feed/camera_main.mp4: 797/797 frames processed (0 skipped), 2706 detections, 687 frame-level violations, 10 UNIQUE violators, 10 evidence frame(s), 183.2s (4.35 fps)
+=================================================================
+KAAVAL AI DECISION LAYER
+=================================================================
+
+Frame 27  (t=0.91s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.89
+Violation confirmed
+Event ID:      EVT-1BD296744C
+Evidence:      evidence/2026/09/26/EVT-1BD296744C.jpg
+
+Frame 145  (t=4.88s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.91
+Violation confirmed
+Event ID:      EVT-A8769A1978
+Evidence:      evidence/2026/09/26/EVT-A8769A1978.jpg
+
+Frame 147  (t=4.94s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.79
+Violation confirmed
+Event ID:      EVT-169879F632
+Evidence:      evidence/2026/09/26/EVT-169879F632.jpg
+
+Frame 487  (t=16.37s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.90
+Violation confirmed
+Event ID:      EVT-37DFDA843F
+Evidence:      evidence/2026/09/26/EVT-37DFDA843F.jpg
+
+Frame 405  (t=13.62s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.82
+Violation confirmed
+Event ID:      EVT-C47BEF21B8
+Evidence:      evidence/2026/09/26/EVT-C47BEF21B8.jpg
+
+Frame 620  (t=20.84s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.86
+Violation confirmed
+Event ID:      EVT-FF33895630
+Evidence:      evidence/2026/09/26/EVT-FF33895630.jpg
+
+Frame 481  (t=16.17s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.86
+Violation confirmed
+Event ID:      EVT-CF2B2E664E
+Evidence:      evidence/2026/09/26/EVT-CF2B2E664E.jpg
+
+Frame 634  (t=21.31s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.83
+Violation confirmed
+Event ID:      EVT-C33C32C796
+Evidence:      evidence/2026/09/26/EVT-C33C32C796.jpg
+
+Frame 668  (t=22.46s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.90
+Violation confirmed
+Event ID:      EVT-A2553B0C73
+Evidence:      evidence/2026/09/26/EVT-A2553B0C73.jpg
+
+Frame 714  (t=24.00s)
+Rider detected
+Helmet status: WITHOUT_HELMET
+Confidence:    0.87
+Violation confirmed
+Event ID:      EVT-7E1B391BA0
+Evidence:      evidence/2026/09/26/EVT-7E1B391BA0.jpg
+=================================================================
+M3 EVENT INGESTION  (existing C4 pipeline)
+=================================================================
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-7fa9654e9c42)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-21949c580e7f)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-161ea7831b73)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-70a5d4024c90)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-385ab9aec490)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-be007c93f3ea)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-3af028cd7b6c)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-9bda1ecca0d8)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-6b1c7f75a70d)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+Provider:         KAAVAL_AI
+Camera:           CAM-001
+Processing Node:  RDK-X5-001
+Event:            HELMET_VIOLATION -> ACCEPTED (evt-7abab411cf05)
+Pipeline:         Event ingested, normalized, stored, and published to Module 4
+=================================================================
+M4 CANONICAL EVENTS (mock Module 4 consumer)
+=================================================================
+Event ID: evt-7abab411cf05  cam=CAM-001  type=HELMET_VIOLATION  conf=0.87  node=RDK-X5-001  model=yolov8n-helmet-detection v1.0.0  evidence=evidence/2026/09/26/EVT-7E1B391BA0.jpg
+Event ID: evt-6b1c7f75a70d  cam=CAM-001  type=HELMET_VIOLATION  conf=0.90  node=RDK-X5-001  model=yolov8n-helmet-detection v1.0.0  evidence=evidence/2026/09/26/EVT-A2553B0C73.jpg
+Event ID: evt-9bda1ecca0d8  cam=CAM-001  type=HELMET_VIOLATION  conf=0.83  node=RDK-X5-001  model=yolov8n-helmet-detection v1.0.0  evidence=evidence/2026/09/26/EVT-C33C32C796.jpg
+Event ID: evt-3af028cd7b6c  cam=CAM-001  type=HELMET_VIOLATION  conf=0.86  node=RDK-X5-001  model=yolov8n-helmet-detection v1.0.0  evidence=evidence/2026/09/26/EVT-CF2B2E664E.jpg
+Event ID: evt-be007c93f3ea  cam=CAM-001  type=HELMET_VIOLATION  conf=0.86  node=RDK-X5-001  model=yolov8n-helmet-detection v1.0.0  evidence=evidence/2026/09/26/EVT-FF33895630.jpg
+=================================================================
+VIDEO ANALYSIS COMPLETE
+=================================================================
+Camera:                              CAM-001
+Video:                               camera_main.mp4
+Duration:                            26.79 seconds
+Video FPS:                           29.746
+Resolution:                          3840x2160
+Total Frames:                        797
+Frames Processed:                    797
+Frames Skipped:                      0
+Final Frame Reached:                 True
+Total Helmet Violation Detections:   687
+Unique Helmet Violators:             10
+Evidence Frames:                     10
+Kaaval Events Generated:             10
+M3 Events Accepted:                  10
+M4 Events Published:                 10
+Processing Time:                     183.15 seconds
+Average Processing FPS:              4.35
+Tracking:                            on (ByteTrack)
+Sampling:                            every_frame
+=================================================================
+NOTE: 'violation detections' are frame-level; 'unique violators' are distinct
+      tracked riders â€” the same rider seen in many frames counts once.
+=================================================================

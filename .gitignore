@@ -29,10 +29,16 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Google Cloud service-account keys (never commit a credential JSON)
+*-sa.json
+*service-account*.json
+credentials.json
+sentinel-*.json
 # Downloaded detector weights and generated relay config
 # (root-scoped so app/models/ stays trackable — a bare `models/` swallowed app/models/grid.py once)
 /models/
 /evidence/
+/outputs/
 relay/bin/
 relay/generated/
 *.key

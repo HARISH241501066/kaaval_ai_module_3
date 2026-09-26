@@ -46,6 +46,21 @@ log = logging.getLogger("sentinel.m3.ai.kaaval")
 
 _MAX_STATES = 64  # bound the per-camera state table
 
+# --- unique violator registry -------------------------------------------------
+# A rider seen WITHOUT_HELMET in 30 consecutive frames is ONE unique violator, not 30.
+# The registry below keeps one record per tracked rider for the whole video, so the job can
+# report `unique_violators` (people) separately from `violation_detections` (frames).
+# Spatial matching (for detectors/trackers without ids) only links observations that are
+# both nearby (the same motion gate as episodes) and recent, so two different riders that
+# pass the same spot minutes apart are never merged.
+VIOLATOR_RECENCY_S = 2.0          # video seconds within which a nearby observation is the same rider
+ID_SWITCH_ABSORB_FACTOR = 0.5     # a NEW track id this close to a recent record is an id switch, not a 2nd rider
+# One evidence image per unique rider, from that rider's best frame. Re-rendering only a
+# materially better observation (and never more than EVIDENCE_MAX_RENDERS times) keeps a 4K
+# frame from being re-encoded for every 0.001 confidence wobble while still tracking the peak.
+EVIDENCE_IMPROVEMENT_MARGIN = 0.05
+EVIDENCE_MAX_RENDERS = 6
+
 # --- association gate -------------------------------------------------------
 # A rider observed at AI_INFERENCE_FPS moves a long way in video pixels between two samples,
 # and that distance depends on the frame size, not on the size of the rider. On the 4K demo
@@ -113,6 +128,79 @@ class _RiderState:
         return {"key": self.key, "hits": self.hits, "confirmed": self.confirmed, "emitted": self.emitted}
 
 
+@dataclass
+class ViolatorRecord:
+    """
+    One UNIQUE rider observed WITHOUT_HELMET anywhere in the video.
+
+    This is the structure that makes "4 riders" different from "137 detections":
+        first_seen / last_seen      video seconds of the first / last violation observation
+        observations                frames this rider was seen without a helmet
+        violation_detections        frame-level detections attributed to this rider
+        streak / confirmations      consecutive observations at confirmation time
+        confirmed                   temporal confirmation rule satisfied
+        max_confidence / best_detection   the representative (highest-confidence) frame
+        evidence_uri                the single evidence JPEG written for this rider
+        emitted                     one Kaaval event already produced for this rider
+    """
+
+    key: str
+    camera_id: str
+    event_id: str
+    track_id: Optional[int] = None
+    first_seen: float = 0.0
+    last_seen: float = 0.0
+    last_frame: int = 0
+    last_bbox: Optional[Tuple[int, int, int, int]] = None
+    observations: int = 0
+    violation_detections: int = 0
+    streak: int = 0
+    confirmed: bool = False
+    confirmed_at: float = 0.0
+    confirmations: int = 0
+    max_confidence: float = 0.0
+    best_detection: Optional[Detection] = None
+    best_frame_number: int = -1
+    evidence_uri: Optional[str] = None
+    evidence_confidence: float = -1.0
+    evidence_renders: int = 0
+    emitted: bool = False
+
+    @property
+    def needs_evidence(self) -> bool:
+        """A confirmed rider whose representative frame should be rendered now.
+
+        Rendered once at confirmation, then only for a materially better observation, and at
+        most EVIDENCE_MAX_RENDERS times per rider — always ONE file per rider (overwritten),
+        never one file per frame.
+        """
+        if not self.confirmed or self.best_detection is None:
+            return False
+        if self.evidence_uri is None:
+            return True
+        return (self.max_confidence >= self.evidence_confidence + EVIDENCE_IMPROVEMENT_MARGIN
+                and self.evidence_renders < EVIDENCE_MAX_RENDERS)
+
+    def to_dict(self) -> Dict:
+        return {
+            "key": self.key,
+            "camera_id": self.camera_id,
+            "event_id": self.event_id,
+            "track_id": self.track_id,
+            "first_seen": round(self.first_seen, 3),
+            "last_seen": round(self.last_seen, 3),
+            "observations": self.observations,
+            "violation_detections": self.violation_detections,
+            "confirmed": self.confirmed,
+            "confirmations": self.confirmations,
+            "max_confidence": round(self.max_confidence, 4),
+            "best_frame_number": self.best_frame_number,
+            "evidence_uri": self.evidence_uri,
+            "evidence_renders": self.evidence_renders,
+            "emitted": self.emitted,
+        }
+
+
 class HelmetViolationLogic:
     """Stateful, per-camera (per-video) decision engine. Not thread-safe by design:
     one instance belongs to one processing job."""
@@ -124,14 +212,26 @@ class HelmetViolationLogic:
         self._round = -1
         self.last_event_ts: Optional[float] = None      # video time of last emitted event on this camera
         self.suppressed = 0                              # episodes dropped by cooldown
+        # Whole-video registry: one record per unique rider that violated the helmet rule.
+        self.violators: Dict[str, ViolatorRecord] = {}
+        self.violation_detections = 0                    # frame-level WITHOUT_HELMET detections
+        self._violator_seq = 0
 
     # ------------------------------------------------------------------ utils
     @property
     def miss_limit(self) -> int:
         return max(2, self.config.confirmation_frames)
 
+    @property
+    def unique_violators(self) -> int:
+        """Distinct riders confirmed WITHOUT_HELMET during this video (the primary metric)."""
+        return sum(1 for rec in self.violators.values() if rec.confirmed)
+
     def active_states(self) -> List[Dict]:
         return [s.to_dict() for s in self._states.values()]
+
+    def violators_summary(self) -> List[Dict]:
+        return [rec.to_dict() for rec in sorted(self.violators.values(), key=lambda r: r.first_seen)]
 
     def _match_state(self, det: Detection, frame_size: Optional[Tuple[int, int]] = None) -> Optional[_RiderState]:
         """Find the (still unclaimed) episode this detection belongs to: the same track id
@@ -185,6 +285,110 @@ class HelmetViolationLogic:
             if (contains or _iou(d.bbox, head.bbox) > 0.05) and score > best_score:
                 best_bbox, best_cls, best_score = d.bbox, d.class_name, score
         return best_bbox, best_cls
+
+    # ------------------------------------------------- unique violator registry
+    def _new_violator(self, det: Detection) -> ViolatorRecord:
+        self._violator_seq += 1
+        key = (f"trk:{det.track_id}" if det.track_id is not None
+               else f"loc:{det.center[0]:.0f},{det.center[1]:.0f}#{self._violator_seq}")
+        rec = ViolatorRecord(
+            key=key,
+            camera_id=self.camera_id,
+            event_id=f"EVT-{uuid.uuid4().hex[:10].upper()}",
+            track_id=det.track_id,
+            first_seen=det.timestamp,
+            last_seen=det.timestamp,
+        )
+        self.violators[key] = rec
+        return rec
+
+    def _match_violator(self, det: Detection, timestamp: float,
+                        frame_size: Optional[Tuple[int, int]] = None) -> Optional[ViolatorRecord]:
+        """Find the unique-rider record this observation belongs to.
+
+        * same track id                       -> the same rider (the common path)
+        * no id on either side, nearby+recent -> same rider (bbox trackers/fallback)
+        * a NEW id appearing very close to a recent record -> a tracker id switch on the
+          same rider (probable), absorbed instead of counted as a second violator.
+        """
+        if det.track_id is not None:
+            for rec in self.violators.values():
+                if rec.track_id == det.track_id:
+                    return rec
+        gate = _gate_px(det, frame_size)
+        cx, cy = _centre(det.bbox)
+        best, best_dist = None, None
+        for rec in self.violators.values():
+            if rec.last_bbox is None or (timestamp - rec.last_seen) > VIOLATOR_RECENCY_S:
+                continue
+            sx, sy = _centre(rec.last_bbox)
+            dist = ((cx - sx) ** 2 + (cy - sy) ** 2) ** 0.5
+            limit = gate if (rec.track_id is None or det.track_id is None) \
+                else ID_SWITCH_ABSORB_FACTOR * gate
+            if dist > limit:
+                continue
+            if best_dist is None or dist < best_dist:
+                best, best_dist = rec, dist
+        return best
+
+    def _update_violators(self, without: List[Detection], with_helmet_observations: List[Detection],
+                          timestamp: float, frame_size: Optional[Tuple[int, int]] = None) -> None:
+        """Maintain the whole-video unique-violator registry (counting, not event emission)."""
+        # A helmet observation closes the pending streak but never un-counts a confirmed rider:
+        # "frame 100 without, frame 101-102 with helmet" must NOT become a violation.
+        for d in with_helmet_observations:
+            rec = self._match_violator(d, timestamp, frame_size)
+            if rec is not None and not rec.confirmed:
+                rec.streak = 0
+
+        for d in without:
+            rec = self._match_violator(d, timestamp, frame_size) or self._new_violator(d)
+            if rec.track_id is None and d.track_id is not None:
+                rec.track_id = d.track_id          # absorbed an id switch: keep the rider
+            rec.observations += 1
+            rec.violation_detections += 1
+            rec.streak += 1
+            rec.last_seen = d.timestamp
+            rec.last_frame = d.frame_number
+            rec.last_bbox = d.bbox
+            self.violation_detections += 1
+            # Representative frame: the highest-confidence observation; the confirming frame
+            # seeds it when the earlier (pre-confirmation) observations are already gone.
+            if d.confidence > rec.max_confidence or (rec.best_detection is None and rec.confirmed):
+                rec.max_confidence = max(rec.max_confidence, float(d.confidence))
+                rec.best_detection = d
+                rec.best_frame_number = d.frame_number
+            if not rec.confirmed and rec.streak >= self.config.confirmation_frames:
+                rec.confirmed = True
+                rec.confirmed_at = d.timestamp
+                rec.confirmations = rec.streak
+                if rec.best_detection is None or rec.best_detection.frame_number != d.frame_number:
+                    # the best pre-confirmation frame is no longer in memory: use this one
+                    rec.max_confidence = max(rec.max_confidence, float(d.confidence))
+                    rec.best_detection = d
+                    rec.best_frame_number = d.frame_number
+                log.info(
+                    "unique violator confirmed on %s: %s (track=%s) after %d observations at t=%.2fs",
+                    self.camera_id, rec.event_id, rec.track_id, rec.confirmations, d.timestamp,
+                )
+
+    def evidence_candidates(self) -> List[Tuple[ViolatorRecord, Detection]]:
+        """Confirmed riders whose best frame still needs to be rendered as evidence.
+
+        Always called right after `observe()` on the SAME frame, so the returned detection is
+        guaranteed to belong to the frame currently held by the caller — evidence is written
+        from the frame being processed, never from a stored one (no frame buffering).
+        """
+        return [(rec, rec.best_detection) for rec in sorted(self.violators.values(), key=lambda r: r.first_seen)
+                if rec.needs_evidence and rec.best_detection is not None
+                and rec.best_detection.frame_number == rec.last_frame]
+
+    def mark_evidence(self, record: ViolatorRecord, uri: Optional[str]) -> None:
+        """Remember the rendered evidence for a rider (keeps the best-confidence frame)."""
+        if uri:
+            record.evidence_uri = uri
+        record.evidence_confidence = record.max_confidence
+        record.evidence_renders += 1
 
     # ---------------------------------------------------------------- observe
     def observe(self, detections: List[Detection], frame_number: int, timestamp: float,
@@ -262,8 +466,54 @@ class HelmetViolationLogic:
             self.last_event_ts = timestamp
             violations.append(violation)
             log.info(
-                "HELMET_VIOLATION confirmed on %s: %s conf=%.2f frame=%d t=%.2fs (%d observations)",
+                "violation episode confirmed on %s (streaming tracker): %s conf=%.2f frame=%d "
+                "t=%.2fs (%d observations) — counted once per unique rider at finalization",
                 self.camera_id, violation.event_id, violation.confidence,
                 violation.frame_number, violation.timestamp, st.hits,
             )
+
+        # 5. whole-video unique-violator registry (one record per rider, counted once)
+        self._update_violators(without, with_helmet, timestamp, frame_size)
         return violations
+
+    # ------------------------------------------------------------- finalization
+    def finalize_violations(self) -> List[ConfirmedViolation]:
+        """
+        End-of-video aggregation: ONE ConfirmedViolation per UNIQUE confirmed violator.
+
+        This is what turns
+
+            track 7   frames 100..200   ->  one violator
+            track 12  frames 180..260   ->  one violator
+
+        into "2 unique helmet violators" and exactly two Kaaval events, however many frames
+        each rider was visible for. Called by the processor after the last frame; emits each
+        rider at most once for the whole video.
+        """
+        out: List[ConfirmedViolation] = []
+        for rec in sorted(self.violators.values(), key=lambda r: r.first_seen):
+            if not rec.confirmed or rec.emitted:
+                continue
+            rec.emitted = True
+            det = rec.best_detection
+            if det is None:                                    # defensive: no frame kept
+                det = Detection(class_name=WITHOUT_HELMET, confidence=rec.max_confidence,
+                                bbox=rec.last_bbox or (0, 0, 0, 0),
+                                frame_number=rec.last_frame, timestamp=rec.last_seen,
+                                track_id=rec.track_id)
+            out.append(ConfirmedViolation(
+                event_id=rec.event_id,
+                camera_id=self.camera_id,
+                detection=det,
+                confidence=rec.max_confidence or det.confidence,
+                frame_number=det.frame_number,
+                timestamp=det.timestamp,
+                track_id=rec.track_id,
+                confirmations=rec.confirmations or rec.observations,
+                evidence_uri=rec.evidence_uri,
+                first_seen=rec.first_seen,
+                last_seen=rec.last_seen,
+                observations=rec.observations,
+                violation_detections=rec.violation_detections,
+            ))
+        return out

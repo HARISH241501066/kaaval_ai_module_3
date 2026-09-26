@@ -95,6 +95,29 @@ class AIConfig:
     video_sources: Dict[str, str] = field(default_factory=dict)
     # Keep new fields last: this dataclass has non-default fields before video_sources.
     image_size_auto: bool = True
+    # Frame selection: 0 = run YOLO on EVERY decoded frame (the demo default).
+    frame_skip: int = 0
+    annotated_video: bool = False
+    output_dir: str = "outputs"
+    # --- provider routing (Google Cloud primary, local YOLO fallback) ---
+    provider: str = "google"                  # AI_PROVIDER: google | yolo
+    allow_local_fallback: bool = True
+    helmet_provider: str = "yolo"             # HELMET_PROVIDER (Cloud VI has no helmet classifier)
+    anpr_provider: str = "google_vision"      # ANPR_PROVIDER: google_vision | none
+    anpr_enabled: bool = True
+    anpr_min_plate_length: int = 6
+    anpr_max_per_job: int = 20
+    google_project_id: str = ""               # never echoed as a secret; presence is reported
+    google_credentials: str = ""              # path to the service-account JSON (never committed)
+    google_vision_credentials: str = ""
+    google_video_region: str = ""
+    google_video_features: str = "PERSON_DETECTION,OBJECT_TRACKING"
+    google_video_input_mode: str = "auto"     # auto | inline | gcs
+    google_video_inline_max_mb: int = 50
+    google_api_timeout_s: int = 600
+    google_max_observations_per_track: int = 8
+    google_classification_interval_s: float = 0.25
+    google_max_classifications: int = 400
 
     @classmethod
     def from_settings(cls, settings=None) -> "AIConfig":
@@ -105,6 +128,7 @@ class AIConfig:
             model_version=s.ai_model_version,
             confidence_threshold=s.ai_confidence_threshold,
             inference_fps=s.ai_inference_fps,
+            frame_skip=s.ai_frame_skip,
             image_size=s.ai_image_size,
             image_size_auto=s.ai_image_size_auto,
             device=s.ai_device,
@@ -114,6 +138,26 @@ class AIConfig:
             cooldown_s=s.ai_helmet_event_cooldown_s,
             evidence_dir=s.ai_evidence_dir,
             processing_node_id=s.ai_processing_node_id,
+            annotated_video=s.ai_annotated_video,
+            output_dir=s.ai_output_dir,
+            provider=(s.ai_provider or "google").strip().lower(),
+            allow_local_fallback=s.ai_allow_local_fallback,
+            helmet_provider=(s.helmet_provider or "yolo").strip().lower(),
+            anpr_provider=(s.anpr_provider or "none").strip().lower(),
+            anpr_enabled=s.anpr_enabled,
+            anpr_min_plate_length=s.anpr_min_plate_length,
+            anpr_max_per_job=s.anpr_max_per_job,
+            google_project_id=(s.google_cloud_project_id or "").strip(),
+            google_credentials=(s.google_application_credentials or "").strip(),
+            google_vision_credentials=(s.google_vision_credentials or "").strip(),
+            google_video_region=(s.google_video_region or "").strip(),
+            google_video_features=s.google_video_features,
+            google_video_input_mode=(s.google_video_input_mode or "auto").strip().lower(),
+            google_video_inline_max_mb=s.google_video_inline_max_mb,
+            google_api_timeout_s=s.google_api_timeout_s,
+            google_max_observations_per_track=s.google_max_observations_per_track,
+            google_classification_interval_s=s.google_classification_interval_s,
+            google_max_classifications=s.google_max_classifications,
             video_sources=parse_video_sources(s.ai_video_sources),
         )
 
@@ -122,10 +166,88 @@ class AIConfig:
     def model_file_exists(self) -> bool:
         return Path(self.model_path).is_file()
 
+    # -------------------------------------------------- provider routing helpers
+    GOOGLE_VIDEO_FEATURES = ("PERSON_DETECTION", "OBJECT_TRACKING", "LABEL_DETECTION", "TEXT_DETECTION")
+
+    @property
+    def helmet_confidence_threshold(self) -> float:
+        """Google-era name for AI_HELMET_MIN_CONFIDENCE (same knob, one source of truth)."""
+        return self.helmet_min_confidence
+
+    @property
+    def confirmation_observations(self) -> int:
+        """Google-era name for AI_HELMET_CONFIRMATION_FRAMES."""
+        return self.confirmation_frames
+
+    @property
+    def video_provider(self) -> str:
+        """Requested video-analysis backend: 'google' (default) or 'yolo'."""
+        return self.provider if self.provider in ("google", "yolo") else "google"
+
+    @property
+    def google_features(self) -> list:
+        """Requested Video Intelligence features, upper-cased and validated."""
+        wanted = [f.strip().upper() for f in (self.google_video_features or "").split(",") if f.strip()]
+        return [f for f in wanted if f in self.GOOGLE_VIDEO_FEATURES] or ["PERSON_DETECTION", "OBJECT_TRACKING"]
+
+    @property
+    def google_credentials_path(self) -> str:
+        """Explicit setting first, then the standard GOOGLE_APPLICATION_CREDENTIALS env var."""
+        import os
+
+        return self.google_credentials or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+
+    @property
+    def google_credentials_source(self) -> str:
+        """Where credentials come from: 'service_account_file' | 'adc' | 'none' — never the path itself."""
+        if self.google_credentials_path:
+            return "service_account_file"
+        # Google's Application Default Credentials (gcloud auth application-default login) or
+        # the metadata server on GCE/Cloud Run.
+        try:
+            import google.auth
+
+            creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+            return "adc" if creds is not None else "none"
+        except Exception:
+            return "none"
+
+    @property
+    def google_configured(self) -> bool:
+        """True when a project id and some form of credentials are available to the SDKs."""
+        return bool(self.google_project_id) and self.google_credentials_source != "none"
+
     @property
     def sample_interval_s(self) -> float:
-        """Seconds of video between two inference observations."""
+        """Seconds of video between two inference observations (legacy AI_INFERENCE_FPS path)."""
         return 1.0 / self.inference_fps if self.inference_fps > 0 else 0.0
+
+    # ------------------------------------------------------- frame selection
+    @property
+    def frame_stride(self) -> int:
+        """1 when every frame is processed; frame_skip+1 otherwise."""
+        return max(1, int(self.frame_skip) + 1)
+
+    @property
+    def processes_every_frame(self) -> bool:
+        """True for the default configuration (AI_FRAME_SKIP=0 and no legacy fps throttle)."""
+        return self.frame_skip <= 0 and self.inference_fps <= 0
+
+    def should_process_frame(self, frame_index: int) -> bool:
+        """Frame-selection policy: AI_FRAME_SKIP wins, otherwise every frame is processed.
+        The legacy AI_INFERENCE_FPS throttle is applied by the processor on video timestamps."""
+        if self.frame_skip > 0:
+            return frame_index % self.frame_stride == 0
+        return True
+
+    @property
+    def sampling_mode(self) -> str:
+        """Human-readable frame-selection mode for metrics/logs."""
+        if self.frame_skip > 0:
+            return f"frame_skip:{self.frame_skip}"
+        if self.inference_fps > 0:
+            return f"inference_fps:{self.inference_fps}"
+        return "every_frame"
 
     def inference_size(self, frame_height: int, frame_width: int) -> int:
         """
@@ -178,6 +300,42 @@ class AIConfig:
             "model_card": MODEL_METADATA,
             "confidence_threshold": self.confidence_threshold,
             "inference_fps": self.inference_fps,
+            "frame_skip": self.frame_skip,
+            "processes_every_frame": self.processes_every_frame,
+            "sampling_mode": self.sampling_mode,
+            "annotated_video": self.annotated_video,
+            "output_dir": self.output_dir,
+            # --- provider routing (no credentials are ever echoed) ---
+            "provider": self.video_provider,
+            "allow_local_fallback": self.allow_local_fallback,
+            "helmet_provider": self.helmet_provider,
+            "anpr_provider": self.anpr_provider if self.anpr_enabled else "none",
+            "anpr_enabled": self.anpr_enabled,
+            "anpr_max_per_job": self.anpr_max_per_job,
+            "helmet_confidence_threshold": self.helmet_confidence_threshold,
+            "confirmation_observations": self.confirmation_observations,
+            "google": {
+                "project_id_configured": bool(self.google_project_id),
+                "credentials_source": self.google_credentials_source,
+                "credentials_file_present": (
+                    Path(self.google_credentials_path).is_file() if self.google_credentials_path else False
+                ),
+                "region": self.google_video_region or "(auto)",
+                "features": self.google_features,
+                "input_mode": self.google_video_input_mode,
+                "inline_max_mb": self.google_video_inline_max_mb,
+                "api_timeout_s": self.google_api_timeout_s,
+                "max_observations_per_track": self.google_max_observations_per_track,
+                "classification_interval_s": self.google_classification_interval_s,
+                "max_classifications": self.google_max_classifications,
+                "configured": self.google_configured,
+                "note": (
+                    "Cloud Video Intelligence provides person/object detection and tracking. "
+                    "It does NOT classify helmet status — helmet status comes from the helmet "
+                    "classifier (HELMET_PROVIDER). ANPR is generic Cloud Vision OCR, not a "
+                    "dedicated Indian ANPR engine."
+                ),
+            },
             "image_size": self.image_size,
             "image_size_auto": self.image_size_auto,
             "inference_size_4k": self.inference_size(2160, 3840),   # what a 4K frame gets

@@ -76,6 +76,10 @@ class HelmetDetector:
     def detect_frame(self, frame: np.ndarray, frame_number: int = 0, timestamp: float = 0.0) -> List[Detection]:
         raise NotImplementedError
 
+    def reset_tracker(self) -> None:
+        """Clear per-video tracking state. Track ids are only valid inside one video/session,
+        so every job starts from an empty tracker (no-op for detectors without a tracker)."""
+
     def health_check(self) -> Dict[str, Any]:
         raise NotImplementedError
 
@@ -96,6 +100,7 @@ class UltralyticsHelmetDetector(HelmetDetector):
         self.config = config or get_ai_config()
         self._lock = threading.Lock()
         self._track_disabled_reason: Optional[str] = None
+        self.tracker_resets = 0                          # videos started with a fresh tracker
         self.last_latency_ms: Optional[float] = None
         self.last_image_size: Optional[int] = None      # effective imgsz of the last frame
 
@@ -158,6 +163,7 @@ class UltralyticsHelmetDetector(HelmetDetector):
                         self._track_disabled_reason = f"{e.__class__.__name__}: {e}"
                         log.warning("YOLO tracking unavailable, falling back to plain detection (%s)",
                                     self._track_disabled_reason)
+                        self._disable_tracking()          # really remove tracking, then predict
                         results = self._model.predict(frame, **kwargs)
                 else:
                     results = self._model.predict(frame, **kwargs)
@@ -197,6 +203,38 @@ class UltralyticsHelmetDetector(HelmetDetector):
         except Exception as e:
             raise DetectorError(f"invalid model output on frame {frame_number}: {e}") from e
         return filter_detections(detections, conf)
+
+    # ----------------------------------------------------------------- tracker
+    def reset_tracker(self) -> None:
+        """
+        Start this video with an empty tracker: track ids are only valid inside one video.
+
+        Ultralytics keeps ByteTrack state on the predictor, and its
+        `on_predict_postprocess_end` callback unconditionally reads `predictor.trackers[0]`,
+        so the tracker list must never be emptied by hand (that raises
+        `IndexError: list index out of range` on the very next frame). Dropping the predictor
+        instead lets Ultralytics rebuild it — with a brand-new tracker — on the next call.
+        """
+        with self._lock:
+            self.tracker_resets += 1
+            if getattr(self._model, "predictor", None) is not None:
+                self._model.predictor = None
+                log.debug("tracker state cleared for a new video")
+
+    def _disable_tracking(self) -> None:
+        """Remove the tracker callbacks and predictor state so the rest of the video runs as
+        plain detection (used when ByteTrack cannot run in this environment)."""
+        try:
+            callbacks = getattr(self._model, "callbacks", None) or {}
+            for hook in ("on_predict_start", "on_predict_postprocess_end"):
+                registered = list(callbacks.get(hook) or [])
+                callbacks[hook] = [
+                    cb for cb in registered
+                    if not getattr(getattr(cb, "func", cb), "__module__", "").startswith("ultralytics.trackers")
+                ]
+            self._model.predictor = None
+        except Exception as e:  # pragma: no cover - best effort, never fatal
+            log.debug("could not detach the tracker callbacks: %s", e)
 
     # ----------------------------------------------------------------- health
     def health_check(self) -> Dict[str, Any]:

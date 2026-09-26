@@ -23,6 +23,15 @@ class ProcessingProvenance(BaseModel):
     model_version: Optional[str] = Field(None, example="HELMET-2.4")
     inference_fps: Optional[float] = Field(None, example=15.2)
     latency_ms: Optional[float] = Field(None, example=42.5)
+    # External-provider provenance (additive and optional: payloads that do not carry these
+    # keys keep their previous behaviour exactly). When a video is analyzed by a cloud service,
+    # the event says which service produced the detections/tracking — the model_* fields above
+    # stay the helmet model that decided the violation.
+    analytics_provider: Optional[str] = Field(None, example="GOOGLE_VIDEO_INTELLIGENCE")
+    analytics_model_name: Optional[str] = Field(None, example="google-cloud-video-intelligence")
+    analytics_model_version: Optional[str] = Field(None, example="v1")
+    helmet_classifier: Optional[str] = Field(None, example="LOCAL_YOLO_HELMET")
+    anpr_provider: Optional[str] = Field(None, example="GOOGLE_CLOUD_VISION")
 
 
 class ObjectDetection(BaseModel):

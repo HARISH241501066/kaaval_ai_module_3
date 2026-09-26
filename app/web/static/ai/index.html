@@ -34,9 +34,10 @@
   <main id="main" class="wrap">
     <h1>Rider helmet detection</h1>
     <p class="lede">
-      Decodes a camera video, runs the local YOLO helmet model, confirms violations with
-      temporal logic, writes an evidence frame, and pushes each event through the existing
-      M3 ingestion pipeline. One event per violation episode — never one per frame.
+      Decodes the whole camera video frame by frame (every frame by default), runs the local
+      YOLO helmet model, confirms violations with temporal logic, and counts <strong>unique
+      riders</strong> — not frame-level detections. Each unique violator gets one evidence frame
+      and one event through the existing M3 ingestion pipeline.
     </p>
 
     <section class="panel" aria-labelledby="h-run">
@@ -48,9 +49,19 @@
         <label for="camera">Camera</label>
         <select id="camera" name="camera"></select>
         <span id="camera-video" class="mono muted"></span>
+        <label for="backend">Analysis backend</label>
+        <select id="backend" name="backend">
+          <option value="local">Local YOLO (/ai/helmet)</option>
+          <option value="cloud">Cloud route (/ai/video)</option>
+        </select>
         <button id="run" type="submit" aria-busy="false">Start job</button>
       </form>
       <p id="run-msg" class="msg" role="status" aria-live="polite"></p>
+      <div id="hero" class="hero" hidden aria-live="polite">
+        <div class="hero__num" id="hero-unique">0</div>
+        <div class="hero__label">Unique helmet violators</div>
+        <div class="hero__sub mono" id="hero-sub"></div>
+      </div>
       <dl id="metrics" class="metrics" hidden></dl>
       <div class="progress" hidden id="progress-wrap">
         <div class="progress__bar"><span id="progress-fill"></span></div>
@@ -61,6 +72,21 @@
     <section class="panel" aria-labelledby="h-model">
       <div class="panel__head"><h2 id="h-model">Model &amp; pipeline health</h2></div>
       <div id="health" class="health" aria-busy="true"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-cloud">
+      <div class="panel__head">
+        <h2 id="h-cloud">Cloud video analysis</h2>
+        <span id="cloud-state" class="pill pill--idle" role="status">checking…</span>
+      </div>
+      <p class="muted">
+        <span class="mono">POST /ai/video/process</span> sends the whole video to the selected
+        analysis backend — Google Cloud Video Intelligence (person/object tracking) or the local
+        YOLO provider — then the local helmet model classifies the tracked riders (Cloud VI has no
+        helmet class), and plate OCR runs once per confirmed violator. Every event still enters
+        the ONE M3 pipeline. A fallback to the local provider is reported, never hidden.
+      </p>
+      <dl id="cloud" class="metrics" aria-busy="true"></dl>
     </section>
 
     <section class="panel" aria-labelledby="h-violations">
@@ -79,8 +105,9 @@
         <table>
           <thead>
             <tr>
-              <th scope="col">Job</th><th scope="col">Camera</th><th scope="col">Status</th>
-              <th scope="col">Frames</th><th scope="col">Detections</th><th scope="col">Violations</th>
+              <th scope="col">Job</th><th scope="col">Camera</th><th scope="col">Backend</th><th scope="col">Status</th>
+              <th scope="col">Processed / total</th><th scope="col">Violation detections</th>
+              <th scope="col">Unique violators</th>
               <th scope="col">Time</th>
             </tr>
           </thead>
@@ -91,7 +118,9 @@
 
     <p class="note">
       Prototype: the job runner is an in-memory registry with a daemon thread, and evidence is a
-      local JPEG directory. Processing a 26 s 4K clip takes roughly 30–45 s on CPU.
+      local JPEG directory. Every frame of a 27 s 4K clip is inferred on, so a full run costs a
+      few minutes on CPU; set AI_FRAME_SKIP=1..4 to trade coverage for speed, or
+      AI_ANNOTATED_VIDEO=true to also write an annotated result video.
     </p>
   </main>
 

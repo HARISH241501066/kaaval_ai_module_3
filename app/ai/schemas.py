@@ -56,21 +56,30 @@ class Detection:
 @dataclass
 class ConfirmedViolation:
     """
-    A confirmed HELMET_VIOLATION produced by the Kaaval AI decision logic
-    (one per violation episode — never one per frame).
+    A confirmed HELMET_VIOLATION produced by the Kaaval AI decision logic.
+
+    One per UNIQUE tracked rider (never one per frame): the same rider observed without a
+    helmet across many frames contributes exactly one instance, carrying the frame-level
+    counts (observations / violation_detections) and the best (highest-confidence) frame
+    as its evidence.
     """
 
     event_id: str                          # Kaaval-side id, e.g. "EVT-8F2C1A9B04" (used for evidence file name)
     camera_id: str
-    detection: Detection                   # the WITHOUT_HELMET head detection that confirmed it
+    detection: Detection                   # the best WITHOUT_HELMET head detection for this rider
     confidence: float
     frame_number: int
-    timestamp: float                       # video timestamp (s)
+    timestamp: float                       # video timestamp (s) of the best frame
     track_id: Optional[int] = None
-    confirmations: int = 1                 # observations that led to the confirmation
+    confirmations: int = 1                 # consecutive observations that confirmed the violation
     vehicle_bbox: Optional[Tuple[int, int, int, int]] = None   # associated motorcycle, if the model provides one
     vehicle_class: Optional[str] = None
     evidence_uri: Optional[str] = None      # set after the evidence frame was written
+    # --- whole-video aggregation for this unique rider ---
+    first_seen: float = 0.0                # video seconds of the first WITHOUT_HELMET observation
+    last_seen: float = 0.0                 # video seconds of the last WITHOUT_HELMET observation
+    observations: int = 0                  # frames this rider was seen WITHOUT_HELMET (>= helmet threshold)
+    violation_detections: int = 0          # frame-level violation detections attributed to this rider
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -83,6 +92,10 @@ class ConfirmedViolation:
             "timestamp": round(self.timestamp, 3),
             "track_id": self.track_id,
             "confirmations": self.confirmations,
+            "first_seen": round(self.first_seen, 3),
+            "last_seen": round(self.last_seen, 3),
+            "observations": self.observations,
+            "violation_detections": self.violation_detections,
             "vehicle_bbox": list(self.vehicle_bbox) if self.vehicle_bbox else None,
             "evidence_ref": (
                 {"type": "local_file", "uri": self.evidence_uri} if self.evidence_uri else None
@@ -104,6 +117,9 @@ class Job:
     job_id: str
     camera_id: str
     video_path: str
+    # "helmet" = local YOLO frame-loop job (/ai/helmet/process)
+    # "video"  = provider-based analysis job (/ai/video/process: Google Cloud or local fallback)
+    mode: str = "helmet"
     status: JobStatus = JobStatus.QUEUED
     created_at: float = 0.0
     started_at: Optional[float] = None
@@ -121,12 +137,14 @@ class Job:
             "job_id": self.job_id,
             "camera_id": self.camera_id,
             "video_path": self.video_path,
+            "mode": self.mode,
             "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
             "error": self.error,
             "metrics": self.metrics,
+            "result": self.metrics.get("result"),      # the compact success summary (or None)
             "violations": self.violations,
         }
 

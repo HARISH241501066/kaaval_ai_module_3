@@ -16,3 +16,9 @@ opencv-python>=4.9,<5
 # no cloud API key. Fetch weights with: python -m app.ai.fetch_model
 ultralytics>=8.3.0,<9
 lapx>=0.5.2        # linear-assignment lib ByteTrack needs when AI_TRACKING_ENABLED=true
+
+# KAAVAL AI: Google Cloud video-analysis backend (optional — the local YOLO provider
+# works without these; install only when running AI_PROVIDER=google).
+# NOTE: Cloud Video Intelligence is deprecated (2026-09-14); plan the migration before 2027-09-14.
+google-cloud-videointelligence>=2.20.0
+google-cloud-vision>=3.15.0

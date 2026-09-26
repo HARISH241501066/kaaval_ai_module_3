@@ -125,7 +125,10 @@ def _mk(class_name: str, conf: float, frame: int, ts: float, bbox=(100, 80, 160,
 def test_model_configuration_loads():
     cfg = get_ai_config()
     assert cfg.confidence_threshold == 0.50
-    assert cfg.inference_fps == 2.0
+    # Coverage-first default: no per-frame skipping, no legacy fps throttle.
+    assert cfg.frame_skip == 0 and cfg.inference_fps == 0.0
+    assert cfg.processes_every_frame is True and cfg.sampling_mode == "every_frame"
+    assert cfg.annotated_video is False
     assert cfg.image_size == 1280
     assert isinstance(cfg.device, str) and cfg.device          # default "cpu", env may override
     assert cfg.confirmation_frames == 3
@@ -405,8 +408,11 @@ def test_violation_flows_through_existing_m3_pipeline(ai_env, monkeypatch):
 
     metrics = outcome["metrics"]
     assert metrics["frames_decoded"] == 40
-    assert metrics["inference_frames"] == 8                 # 4 s @ 2 fps: not every frame
-    assert metrics["violations"] == 1                       # one episode -> one event
+    assert metrics["frames_processed"] == 40                # every frame is inferred on
+    assert metrics["frames_skipped"] == 0
+    assert metrics["inference_frames"] == 40
+    assert metrics["unique_violators"] == 1                 # one rider -> one event
+    assert metrics["violations"] == 1
     assert metrics["processing_time"] > 0 and metrics["inference_fps_actual"] > 0
 
     ingest = outcome["ingest_results"][0]
@@ -480,7 +486,13 @@ def test_process_endpoint_starts_background_job(client, ai_env, monkeypatch):
         time.sleep(0.2)
     assert data["status"] == "COMPLETED", data.get("error")
     assert data["metrics"]["violations"] == 1
+    assert data["metrics"]["unique_violators"] == 1
     assert data["violations"][0]["event_id"].startswith("EVT-")
+    # the compact summary block the console renders (camera/video/frames/unique violators)
+    result = data["result"]
+    assert result["status"] == "completed" and result["camera_id"] == "CAM-001"
+    assert result["frames_processed"] == 40 and result["frames_skipped"] == 0
+    assert result["unique_violators"] == 1 and result["evidence_frames"] == 1
     assert get_job_registry().get(job_id).status == JobStatus.COMPLETED
 
 
@@ -496,7 +508,8 @@ def test_config_and_health_endpoints(client, ai_env, monkeypatch):
     cfg = client.get("/ai/helmet/config").json()
     assert cfg["model_name"] == "yolov8n-helmet-detection"
     assert cfg["model_card"]["source_url"].startswith("https://huggingface.co/")
-    assert cfg["inference_fps"] == 2.0 and cfg["confirmation_frames"] == 3
+    assert cfg["frame_skip"] == 0 and cfg["processes_every_frame"] is True
+    assert cfg["inference_fps"] == 0.0 and cfg["confirmation_frames"] == 3
 
     # model file deliberately missing (ai_env points AI_MODEL_PATH at a tmp path)
     health = client.get("/ai/helmet/health").json()
@@ -574,3 +587,270 @@ def test_evidence_endpoint_serves_the_frame_but_nothing_else(client, ai_env, tmp
                       params={"uri": str(Path(cfg.evidence_dir) / "notes.txt")}).status_code == 404
     assert client.get("/ai/helmet/evidence", params={"uri": "evidence/1970/01/01/EVT-NOPE.jpg"}).status_code == 404
     assert client.get("/ai/helmet/evidence").status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# 10. whole-video coverage + UNIQUE violator counting (frame detections != people)
+# ---------------------------------------------------------------------------
+class SceneDetector:
+    """Scripted detector: what the model 'sees' on each frame, plus the frames it was asked
+    about (proving that every frame really reached YOLO)."""
+
+    def __init__(self, fn=None, script=None, default=None, model_name="scene-model"):
+        self.fn = fn
+        self.script = script or {}
+        self.default = default
+        self.calls = []
+        self.reset_calls = 0
+        self.last_latency_ms = 4.2
+        self.model_name = model_name
+        self.model_version = "0.0-test"
+
+    def reset_tracker(self):
+        self.reset_calls += 1
+
+    def detect_frame(self, frame, frame_number: int = 0, timestamp: float = 0.0):
+        self.calls.append(frame_number)
+        spec = self.fn(frame_number) if self.fn else self.script.get(frame_number, self.default)
+        return [Detection(c, conf, bbox, frame_number, timestamp, trk) for c, conf, bbox, trk in (spec or [])]
+
+    def health_check(self):
+        return {"status": "READY", "model_name": self.model_name}
+
+
+def _run(ai_env, detector, camera="CAM-001", **cfg_env):
+    """Run the processor over the synthetic clip with an explicit config."""
+    from app.ai.config import AIConfig
+    from app.ai.video_processor import VideoProcessor
+
+    with pytest.MonkeyPatch.context() as mp:
+        for key, value in cfg_env.items():
+            mp.setenv(key, str(value))
+        get_settings.cache_clear()
+        cfg = AIConfig.from_settings()
+    return VideoProcessor(config=cfg, detector=detector).process(camera, str(ai_env / "clip.mp4"))
+
+
+def test_video_metadata_is_read_from_the_container(ai_env):
+    """total_frames / fps / duration / size come from the file itself, never from a constant."""
+    src = LocalVideoSource(str(ai_env / "clip.mp4"))
+    src.open()
+    info = src.info
+    assert info["total_frames"] == 40
+    assert info["video_fps"] == pytest.approx(10.0, abs=0.1)
+    assert info["video_duration_seconds"] == pytest.approx(4.0, abs=0.2)
+    assert (info["video_width"], info["video_height"]) == (128, 128)
+    src.close()
+
+
+def test_every_frame_is_processed_by_default(ai_env):
+    """AI_FRAME_SKIP defaults to 0: frame 0..39 all reach YOLO, in order, to the last frame."""
+    detector = SceneDetector(default=[])
+    metrics = _run(ai_env, detector)["metrics"]
+    assert metrics["sampling_mode"] == "every_frame"
+    assert metrics["total_frames"] == 40
+    assert metrics["frames_decoded"] == 40
+    assert metrics["frames_processed"] == 40
+    assert metrics["frames_skipped"] == 0
+    assert metrics["reached_last_frame"] is True and metrics["decode_complete"] is True
+    assert detector.calls == list(range(40))            # every single frame, none repeated
+    assert detector.reset_calls == 1                    # track ids are per video
+    assert metrics["processing_fps"] > 0
+
+
+def test_frame_skip_is_opt_in_and_halves_the_work(ai_env):
+    """AI_FRAME_SKIP=1 must be honoured, and must remain OFF unless asked for."""
+    detector = SceneDetector(default=[])
+    metrics = _run(ai_env, detector, AI_FRAME_SKIP="1")["metrics"]
+    assert metrics["sampling_mode"] == "frame_skip:1"
+    assert metrics["frames_processed"] == 20 and metrics["frames_skipped"] == 20
+    assert detector.calls == list(range(0, 40, 2))
+
+
+def test_same_rider_in_many_frames_is_one_unique_violator(ai_env):
+    """The core requirement: 40 frame-level detections of ONE rider = 1 unique violator."""
+    detector = SceneDetector(default=[(WITHOUT_HELMET, 0.90, (100, 80, 160, 160), 7)])
+    outcome = _run(ai_env, detector)
+    metrics = outcome["metrics"]
+    assert metrics["violation_detections"] == 40         # frame-level detections
+    assert metrics["unique_violators"] == 1              # ...but ONE person
+    assert metrics["violations"] == 1 and len(outcome["violations"]) == 1
+    assert metrics["events_ingested"] == 1
+    assert metrics["evidence_frames"] == 1
+    assert metrics["outcome"] == "PROCESSING_COMPLETED"
+
+    violation = outcome["violations"][0]
+    assert violation["track_id"] == 7
+    assert violation["observations"] == 40
+    assert violation["violation_detections"] == 40
+    assert violation["first_seen"] < violation["last_seen"]
+    assert violation["confidence"] == pytest.approx(0.90)
+
+    # exactly ONE evidence image for the rider, referenced by the event
+    frames = sorted((ai_env / "evidence").rglob("*.jpg"))
+    assert len(frames) == 1 and frames[0].stat().st_size > 0
+    assert Path(violation["evidence_ref"]["uri"]).is_file()
+
+
+def test_evidence_keeps_the_highest_confidence_frame_and_is_written_once(ai_env):
+    """Evidence follows the best frame of the rider, still one file per rider."""
+    confs = [0.60, 0.62, 0.65, 0.70, 0.95, 0.80, 0.75, 0.72, 0.71, 0.69]
+    detector = SceneDetector(
+        fn=lambda f: [(WITHOUT_HELMET, confs[f % len(confs)], (100, 80, 160, 160), 7)]
+        if f < 10 else [])
+    outcome = _run(ai_env, detector)
+    violation = outcome["violations"][0]
+    assert violation["confidence"] == pytest.approx(0.95)     # the best observation wins
+    assert violation["frame_number"] == 4                     # ...and its frame is the evidence
+    frames = sorted((ai_env / "evidence").rglob("*.jpg"))
+    assert len(frames) == 1                                   # never one image per frame
+
+
+def test_multiple_riders_are_counted_separately(ai_env):
+    """Two riders in different places/ids = 2 unique violators, each with its own event."""
+    def scene(frame: int):
+        if frame < 20:
+            return [(WITHOUT_HELMET, 0.90, (100, 80, 160, 160), 7)]
+        if frame >= 24:
+            return [(WITHOUT_HELMET, 0.85, (900, 80, 960, 160), 12)]
+        return []
+
+    outcome = _run(ai_env, SceneDetector(fn=scene))
+    metrics = outcome["metrics"]
+    assert metrics["unique_violators"] == 2
+    assert metrics["violations"] == 2 and metrics["events_ingested"] == 2
+    assert metrics["violation_detections"] == 36          # 20 frames + 16 frames
+    assert {v["track_id"] for v in outcome["violations"]} == {7, 12}
+    assert len({v["event_id"] for v in outcome["violations"]}) == 2
+    assert len(sorted((ai_env / "evidence").rglob("*.jpg"))) == 2
+
+
+def test_confirmation_frames_gate_the_unique_violator_count(ai_env):
+    """2 frames without a helmet then a helmet is NOT a confirmed violator."""
+    def scene(frame: int):
+        if frame <= 1:
+            return [(WITHOUT_HELMET, 0.92, (100, 80, 160, 160), 7)]
+        if frame >= 3:
+            return [(WITH_HELMET, 0.92, (100, 80, 160, 160), 7)]
+        return []
+
+    outcome = _run(ai_env, SceneDetector(fn=scene))
+    metrics = outcome["metrics"]
+    assert metrics["violation_detections"] == 2           # seen twice
+    assert metrics["unique_violators"] == 0               # never confirmed -> not a violator
+    assert metrics["events_ingested"] == 0
+    assert metrics["outcome"] == "PROCESSING_COMPLETED_WITH_ZERO_VIOLATIONS"
+
+
+def test_low_confidence_helmet_detections_never_count_as_violators(ai_env):
+    detector = SceneDetector(fn=lambda f: [(WITHOUT_HELMET, 0.45, (100, 80, 160, 160), 7)])
+    metrics = _run(ai_env, detector)["metrics"]
+    assert metrics["unique_violators"] == 0
+    assert metrics["violation_detections"] == 0
+    assert metrics["detections"] == 40                     # the raw detections are still reported
+
+
+def test_spatial_fallback_associates_a_rider_without_track_ids(ai_env):
+    """No track ids: a moving, overlapping rider still counts once (IoU/centroid fallback)."""
+    def scene(frame: int):
+        x = 100 + frame * 3
+        return [(WITHOUT_HELMET, 0.88, (x, 80, x + 60, 160), None)]
+
+    metrics = _run(ai_env, SceneDetector(fn=scene))["metrics"]
+    assert metrics["unique_violators"] == 1               # one rider walking across the frame
+    assert metrics["violation_detections"] == 40
+
+
+def test_two_far_apart_riders_without_track_ids_stay_separate(ai_env):
+    def scene(frame: int):
+        return [(WITHOUT_HELMET, 0.8, (100, 80, 160, 160), None),
+                (WITHOUT_HELMET, 0.8, (1000, 80, 1060, 160), None)]
+
+    metrics = _run(ai_env, SceneDetector(fn=scene))["metrics"]
+    assert metrics["unique_violators"] == 2
+    assert metrics["violation_detections"] == 80
+
+
+def test_result_summary_block_matches_the_required_shape(ai_env):
+    detector = SceneDetector(default=[(WITHOUT_HELMET, 0.9, (100, 80, 160, 160), 7)])
+    outcome = _run(ai_env, detector)
+    result = outcome["metrics"]["result"]
+    for key in ("status", "camera_id", "video", "duration_seconds", "video_fps", "total_frames",
+                "frames_processed", "frames_skipped", "detections", "violation_detections",
+                "unique_violators", "violations", "evidence_frames", "processing_fps"):
+        assert key in result
+    assert result["status"] == "completed"
+    assert result["camera_id"] == "CAM-001"
+    assert result["video"] == "clip.mp4"
+    assert result["video_fps"] == pytest.approx(10.0, abs=0.1)
+    assert result["total_frames"] == 40 and result["frames_processed"] == 40
+    assert result["frames_skipped"] == 0
+    assert result["unique_violators"] == 1 and result["violations"] == 1
+    assert result["violation_detections"] == 40
+    assert result["evidence_frames"] == 1
+
+
+def test_tracker_reset_drops_the_predictor_instead_of_emptying_the_tracker_list():
+    """Regression: `predictor.trackers = []` made Ultralytics raise IndexError on the next
+    frame (`type(predictor.trackers[0])` in ultralytics/trackers/track.py), which poisoned the
+    shared detector for every later job in the process. The reset must drop the predictor."""
+    import threading
+    import types
+
+    from app.ai.helmet_detector import UltralyticsHelmetDetector
+
+    detector = object.__new__(UltralyticsHelmetDetector)      # no weights needed for this
+    detector._lock = threading.Lock()
+    detector._track_disabled_reason = None
+    detector.tracker_resets = 0
+    trackers = [object()]
+    detector._model = types.SimpleNamespace(
+        predictor=types.SimpleNamespace(trackers=trackers), callbacks={})
+
+    detector.reset_tracker()
+    assert detector._model.predictor is None              # rebuilt, with a fresh tracker
+    assert trackers == trackers and len(trackers) == 1     # never emptied by hand
+    assert detector.tracker_resets == 1
+
+    # a detector that never ran inference has no predictor: reset is a no-op, not an error
+    detector.reset_tracker()
+    assert detector._model.predictor is None and detector.tracker_resets == 2
+
+
+def test_disable_tracking_removes_tracker_callbacks():
+    import threading
+    import types
+
+    from app.ai.helmet_detector import UltralyticsHelmetDetector
+
+    def on_predict_start(predictor, persist=False):      # stands in for ultralytics.trackers.track
+        return None
+    on_predict_start.__module__ = "ultralytics.trackers.track"
+    other = lambda predictor: None                        # noqa: E731  (an unrelated callback)
+
+    detector = object.__new__(UltralyticsHelmetDetector)
+    detector._lock = threading.Lock()
+    detector._track_disabled_reason = None
+    detector._model = types.SimpleNamespace(
+        predictor=types.SimpleNamespace(trackers=[object()]),
+        callbacks={"on_predict_start": [on_predict_start, other],
+                   "on_predict_postprocess_end": [on_predict_start]})
+
+    detector._disable_tracking()
+    assert detector._model.predictor is None
+    assert detector._model.callbacks["on_predict_start"] == [other]   # tracker hook gone
+    assert detector._model.callbacks["on_predict_postprocess_end"] == []
+
+
+def test_failed_video_is_reported_as_processing_failed(ai_env):
+    """A video that cannot be read must never be reported as "0 violations"."""
+    from app.ai.jobs import JobRegistry
+    from app.ai.schemas import JobStatus
+
+    registry = JobRegistry()
+    job = registry.create(camera_id="CAM-001", video_path=str(ai_env / "missing.mp4"))
+    registry.run_job(job)
+    assert job.status == JobStatus.FAILED and job.error
+    assert job.metrics["outcome"] == "PROCESSING_FAILED"
+    assert "unique_violators" not in job.metrics          # no fabricated zero
+    assert job.to_dict()["result"] is None

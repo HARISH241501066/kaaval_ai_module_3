@@ -54,7 +54,7 @@ def main(argv=None) -> int:
     print(f"Model:         {cfg.model_name} v{cfg.model_version}  [{MODEL_METADATA['license']}]")
     print(f"Weights:       {cfg.model_path} ({'found' if cfg.model_file_exists else 'MISSING'})")
     print(f"Device:        {cfg.device.upper()}")
-    print(f"Inference FPS: {cfg.inference_fps}")
+    print(f"Frame coverage: {cfg.sampling_mode}" + ("  (every frame)" if cfg.processes_every_frame else ""))
     print(f"Thresholds:    conf>={cfg.confidence_threshold}, helmet>={cfg.helmet_min_confidence}, "
           f"confirm={cfg.confirmation_frames} frames, cooldown={cfg.cooldown_s}s")
     print(f"Node:          {cfg.processing_node_id}  (provider KAAVAL_AI)")
@@ -107,11 +107,31 @@ def main(argv=None) -> int:
               f"evidence={ev['evidence_ref'].get('uri')}")
 
     print(BAR)
-    print("METRICS")
+    print("VIDEO ANALYSIS COMPLETE")
     print(BAR)
-    for key in ("frames_decoded", "inference_frames", "detections", "violations", "events_ingested",
-                "processing_time", "inference_fps_actual", "avg_latency_ms", "cooldown_suppressed"):
-        print(f"{key:>22}: {metrics.get(key)}")
+    print(f"Camera:                              {metrics['camera_id']}")
+    print(f"Video:                               {metrics['video']}")
+    print(f"Duration:                            {metrics['video_duration_seconds']} seconds")
+    print(f"Video FPS:                           {metrics['video_fps']}")
+    print(f"Resolution:                          {metrics['video_width']}x{metrics['video_height']}")
+    print(f"Total Frames:                        {metrics['total_frames']}")
+    print(f"Frames Processed:                    {metrics['frames_processed']}")
+    print(f"Frames Skipped:                      {metrics['frames_skipped']}")
+    print(f"Final Frame Reached:                 {metrics['reached_last_frame']}")
+    print(f"Total Helmet Violation Detections:   {metrics['violation_detections']}")
+    print(f"Unique Helmet Violators:             {metrics['unique_violators']}")
+    print(f"Evidence Frames:                     {metrics['evidence_frames']}")
+    print(f"Kaaval Events Generated:             {metrics['violations']}")
+    print(f"M3 Events Accepted:                  {metrics['events_ingested']}")
+    print(f"M4 Events Published:                 {len(get_mock_m4_consumer().get_events(limit=1000))}")
+    print(f"Processing Time:                     {metrics['processing_time']} seconds")
+    print(f"Average Processing FPS:              {metrics['processing_fps']}")
+    print(f"Tracking:                            {'on (ByteTrack)' if cfg.tracking_enabled else 'off'}")
+    print(f"Sampling:                            {metrics['sampling_mode']}")
+    print(BAR)
+    print("NOTE: 'violation detections' are frame-level; 'unique violators' are distinct")
+    print("      tracked riders — the same rider seen in many frames counts once.")
+    print(BAR)
     return 0
 
 

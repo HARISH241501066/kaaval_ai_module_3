@@ -1,0 +1,652 @@
+INFO:     Started server process [5188]
+INFO:     Waiting for application startup.
+2026-09-26 10:58:45,118 [INFO] sentinel.m3.main: Initializing Sentinel Module 3 Federation Backend...
+2026-09-26 10:58:45,118 [INFO] sentinel.m3.db: Initializing database tables...
+2026-09-26 10:58:45,123 [INFO] sentinel.m3.db: Database tables initialized successfully.
+2026-09-26 10:58:45,236 [INFO] sentinel.m3.adapters: Registered adapter: KAAVAL_EDGE (Protocol: KAAVAL_EDGE)
+2026-09-26 10:58:45,236 [INFO] sentinel.m3.adapters: Registered adapter: KAAVAL_SERVER (Protocol: KAAVAL_SERVER)
+2026-09-26 10:58:45,236 [INFO] sentinel.m3.adapters: Registered adapter: LIVE_DETECTOR (Protocol: SENTINEL_GRID)
+2026-09-26 10:58:45,236 [INFO] sentinel.m3.adapters: Registered adapter: SENTINEL_GRID (Protocol: SENTINEL_GRID)
+2026-09-26 10:58:45,236 [INFO] sentinel.m3.main: Loaded adapters: ['KAAVAL_EDGE', 'KAAVAL_SERVER', 'LIVE_DETECTOR', 'SENTINEL_GRID']
+2026-09-26 10:58:46,463 [INFO] sentinel.m3.main: Sentinel Module 3 Backend ready. Swagger docs available at /docs
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8123 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62693 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57724 - "GET /ui/ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57724 - "GET /ui/ai/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57725 - "GET /ui/ai/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57725 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57724 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57730 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+2026-09-26 10:59:34,321 [INFO] sentinel.m3.ai.detector: loaded helmet model yolov8n-helmet-detection v1.0.0 (2 classes: With Helmet, Without Helmet) on device=cpu
+INFO:     127.0.0.1:57725 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57057 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57056 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 10:59:52,156 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_sub.mp4 as CAM-002 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 10:59:52,156 [INFO] sentinel.m3.ai.processor: video metadata: 605 frames @ 30.000 fps (20.17s), 3840x2160 | every frame
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56672 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56673 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+2026-09-26 10:59:58,279 [INFO] sentinel.m3.ai.kaaval: violation episode confirmed on CAM-002 (streaming tracker): EVT-774C7D0979 conf=0.72 frame=2 t=0.07s (3 observations) — counted once per unique rider at finalization
+2026-09-26 10:59:58,279 [INFO] sentinel.m3.ai.kaaval: unique violator confirmed on CAM-002: EVT-1AF425E7E5 (track=1) after 3 observations at t=0.07s
+2026-09-26 10:59:58,386 [INFO] sentinel.m3.ai.evidence: evidence frame saved: evidence/2026/09/26/EVT-1AF425E7E5.jpg
+2026-09-26 10:59:58,388 [INFO] sentinel.m3.ai.processor: evidence frame evidence/2026/09/26/EVT-1AF425E7E5.jpg for unique violator EVT-1AF425E7E5 (track=1)
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56669 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58500 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58500 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63560 - "GET /ui/ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58500 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63560 - "GET /ui/ai/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ui/ai/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63560 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+2026-09-26 11:00:07,790 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_main.mp4 as CAM-001 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:00:07,791 [INFO] sentinel.m3.ai.processor: video metadata: 797 frames @ 29.746 fps (26.79s), 3840x2160 | every frame
+2026-09-26 11:00:08,174 [WARNING] sentinel.m3.ai.detector: YOLO tracking unavailable, falling back to plain detection (IndexError: list index out of range)
+2026-09-26 11:00:08,459 [ERROR] sentinel.m3.ai.processor: processing failed on camera_feed/camera_sub.mp4 after 40 frames: inference failed on frame 39 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 158, in detect_frame
+    results = self._model.track(
+        frame, persist=True, tracker="bytetrack.yaml", **kwargs
+    )
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 600, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 165, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 39 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+2026-09-26 11:00:08,656 [ERROR] sentinel.m3.ai.jobs: job job-3f6c4089d545 FAILED: inference failed on frame 39 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 158, in detect_frame
+    results = self._model.track(
+        frame, persist=True, tracker="bytetrack.yaml", **kwargs
+    )
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 600, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 165, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\jobs.py", line 76, in run_job
+    outcome = processor.process(job.camera_id, job.video_path, job=job)
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 39 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+2026-09-26 11:00:08,661 [ERROR] sentinel.m3.ai.processor: processing failed on camera_feed/camera_main.mp4 after 1 frames: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/jobs/job-3f6c4089d545 HTTP/1.1" 200 OK
+2026-09-26 11:00:08,670 [ERROR] sentinel.m3.ai.jobs: job job-5970930e0298 FAILED: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\jobs.py", line 76, in run_job
+    outcome = processor.process(job.camera_id, job.video_path, job=job)
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+INFO:     127.0.0.1:55245 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/jobs/job-5970930e0298 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63560 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55245 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55947 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53984 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63952 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60963 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60962 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57917 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57648 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51172 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51171 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65328 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62256 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/jobs?limit=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65332 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65331 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55727 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64091 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59312 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59311 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49894 - "GET /ai/helmet/jobs?limit=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64128 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65524 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54701 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54700 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65328 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61259 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57983 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57982 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53603 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64611 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53609 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53608 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64320 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50920 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54754 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54753 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59197 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51411 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55269 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55268 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62866 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64043 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59317 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59316 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57362 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61468 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57365 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57364 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53187 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49615 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56846 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56845 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 11:03:14,569 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_main.mp4 as CAM-001 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:03:14,571 [INFO] sentinel.m3.ai.processor: video metadata: 797 frames @ 29.746 fps (26.79s), 3840x2160 | every frame
+2026-09-26 11:03:15,384 [ERROR] sentinel.m3.ai.processor: processing failed on camera_feed/camera_main.mp4 after 1 frames: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+2026-09-26 11:03:15,401 [ERROR] sentinel.m3.ai.jobs: job job-975d9a7329da FAILED: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\jobs.py", line 76, in run_job
+    outcome = processor.process(job.camera_id, job.video_path, job=job)
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+INFO:     127.0.0.1:57732 - "GET /ai/helmet/jobs/job-975d9a7329da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52832 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 11:03:20,034 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_sub.mp4 as CAM-002 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:03:20,035 [INFO] sentinel.m3.ai.processor: video metadata: 605 frames @ 30.000 fps (20.17s), 3840x2160 | every frame
+INFO:     127.0.0.1:52832 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+2026-09-26 11:03:20,656 [ERROR] sentinel.m3.ai.processor: processing failed on camera_feed/camera_sub.mp4 after 1 frames: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+2026-09-26 11:03:20,661 [ERROR] sentinel.m3.ai.jobs: job job-1f0ea42bd521 FAILED: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\jobs.py", line 76, in run_job
+    outcome = processor.process(job.camera_id, job.video_path, job=job)
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+    raise DetectorError(
+    ...<2 lines>...
+    ) from e
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+INFO:     127.0.0.1:57732 - "GET /ai/helmet/jobs/job-1f0ea42bd521 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52832 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54734 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54740 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54739 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60778 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54714 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49263 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49262 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60974 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57561 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60980 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60979 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54441 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58207 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50780 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63571 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58807 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58806 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57160 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57248 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59672 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59880 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57712 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62551 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54841 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51440 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63144 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63143 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58801 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52289 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49499 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51905 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54325 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57939 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60298 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64124 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55202 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55201 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61819 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60571 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53791 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65330 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65329 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63514 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63513 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63524 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49662 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58496 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49670 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49669 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63912 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64143 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60205 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60204 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53197 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49636 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53199 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53198 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64379 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51526 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51370 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51369 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60727 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61361 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60730 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60729 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59587 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61112 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54149 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54148 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50439 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63648 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50443 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50442 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59520 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56530 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57622 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57620 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55907 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49646 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55909 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55908 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57622 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61627 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ui/ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ui/ai/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ui/ai/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "POST /ai/helmet/process HTTP/1.1" 202 Accepted
+2026-09-26 11:09:47,791 [INFO] sentinel.m3.ai.processor: processing camera_feed/camera_main.mp4 as CAM-001 | model=yolov8n-helmet-detection v1.0.0 device=cpu sampling=every_frame conf>=0.50 helmet_conf=0.60 confirm=3 frames
+2026-09-26 11:09:47,791 [INFO] sentinel.m3.ai.processor: video metadata: 797 frames @ 29.746 fps (26.79s), 3840x2160 | every frame
+2026-09-26 11:09:48,199 [ERROR] sentinel.m3.ai.processor: processing failed on camera_feed/camera_main.mp4 after 1 frames: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+        raise
+        ^^^^^
+    ...<2 lines>...
+            f"inference failed on frame {frame_number} (device={self.config.device}, "
+            ^^^^
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+2026-09-26 11:09:48,217 [ERROR] sentinel.m3.ai.jobs: job job-1fe389b87ec4 FAILED: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 167, in detect_frame
+    results = self._model.predict(frame, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\model.py", line 558, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 259, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Results into one
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\torch\utils\_contextlib.py", line 40, in generator_context
+    response = gen.send(None)
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 388, in stream_inference
+    self.run_callbacks("on_predict_postprocess_end")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\engine\predictor.py", line 577, in run_callbacks
+    callback(self)
+    ~~~~~~~~^^^^^^
+  File "C:\Users\hp\AppData\Roaming\Python\Python314\site-packages\ultralytics\trackers\track.py", line 106, in on_predict_postprocess_end
+    tracker_cls = type(predictor.trackers[0])
+                       ~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\jobs.py", line 76, in run_job
+    outcome = processor.process(job.camera_id, job.video_path, job=job)
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\video_processor.py", line 236, in process
+    detections = detector.detect_frame(
+        frame, frame_number=frame_number, timestamp=timestamp
+    )
+  File "D:\Sentinel\kaaval_ai_module_3\app\ai\helmet_detector.py", line 171, in detect_frame
+        raise
+        ^^^^^
+    ...<2 lines>...
+            f"inference failed on frame {frame_number} (device={self.config.device}, "
+            ^^^^
+app.ai.helmet_detector.DetectorError: inference failed on frame 0 (device=cpu, imgsz=1280, frame=2160x3840): list index out of range
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/jobs/job-1fe389b87ec4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61855 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51953 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ui/ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ui/ai/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ui/ai/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49247 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49246 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63019 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52855 - "GET /ai/helmet/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63021 - "GET /ai/helmet/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63020 - "GET /ai/helmet/health HTTP/1.1" 200 OK
